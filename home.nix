@@ -80,6 +80,8 @@ in
     pkgs.http-prompt
     pkgs.drawio 
     pkgs.dasht
+    pkgs.git-lfs
+    pkgs.gnupg
   ];
  
   programs.direnv = {
