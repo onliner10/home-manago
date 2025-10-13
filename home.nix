@@ -5,7 +5,7 @@ let
 in
 {
   imports = [
-    ./local.nix 
+    ./local.nix
     ./vim.nix
   ];
   nixpkgs = {
@@ -28,33 +28,13 @@ in
   # You should not change this value, even if you update Home Manager. If you do
   # want to update the value, then make sure to first check the Home Manager
   # release notes.
-  home.stateVersion = "24.05"; # Please read the comment before changing.
- 
-  home.activation = {
-    copyApplications = let
-      apps = pkgs.buildEnv {
-        name = "home-manager-applications";
-        paths = config.home.packages;
-        pathsToLink = "/Applications";
-      };
-    in lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      baseDir="$HOME/Documents/Applications/Home Manager Apps"
-      if [ -d "$baseDir" ]; then
-        rm -rf "$baseDir"
-      fi
-      mkdir -p "$baseDir"
-      for appFile in ${apps}/Applications/*; do
-        target="$baseDir/$(basename "$appFile")"
-        $DRY_RUN_CMD cp ''${VERBOSE_ARG:+-v} -fHRL "$appFile" "$baseDir"
-        $DRY_RUN_CMD chmod ''${VERBOSE_ARG:+-v} -R +w "$target"
-      done
-    '';
-  };
- 
+  home.stateVersion = "25.05"; # Please read the comment before changing.
+  
   # The home.packages option allows you to install Nix packages into your
   # environment.
   home.packages = [
-    (pkgs.nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
+    pkgs.nerd-fonts.fira-code
+    pkgs.nerd-fonts.droid-sans-mono
     pkgs.pgadmin4-desktopmode
     pkgs.visidata
     pkgs.alacritty
@@ -77,7 +57,6 @@ in
     pkgs.multitail
     pkgs.openapi-tui
     pkgs.yazi
-    pkgs.http-prompt
     pkgs.drawio 
     pkgs.dasht
     pkgs.git-lfs

@@ -223,7 +223,6 @@ in
       telescope.load_extension("live_grep_args")
  
       require('neoscroll').setup({})
-      vim.g["languagetool_jar"] = '/Users/mateusz.urban/LanguageTool-5.9/languagetool-commandline.jar'
  
       local bufnr = vim.api.nvim_get_current_buf()
       local opts = { noremap = true, silent = true, buffer = bufnr, }
