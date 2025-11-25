@@ -9,21 +9,40 @@ in
     defaultEditor = true;
     package = pkgsUnstable.neovim-unwrapped;
     plugins = with pkgs.vimPlugins; [
-      guess-indent-nvim
-      dhall-vim
+      # Core
+      plenary-nvim
+      nvim-web-devicons
+
+      # UI
+      kanagawa-nvim
+      lualine-nvim
+      lualine-lsp-progress
+      neoscroll-nvim
+      golden-ratio
+
+      # Telescope
       telescope-nvim
-      which-key-nvim
-      tokyonight-nvim
-      # coc-nvim
-      haskell-vim
-      onedark-nvim
-      cyberdream-nvim
       telescope-file-browser-nvim
-      conflict-marker-vim
+      telescope_hoogle
+      pkgsUnstable.vimPlugins.telescope-live-grep-args-nvim
+
+      # Navigation
+      pkgsUnstable.vimPlugins.flash-nvim
+      nvim-ufo
+      vim-bookmarks
+
+      # Git
+      vim-fugitive
+      vim-signify
       diffview-nvim
-      context-vim
-      #telescope-coc-nvim
-      #copilot-vim
+      conflict-marker-vim
+
+      # LSP & Completion
+      nvim-cmp
+      cmp-nvim-lsp
+      trouble-nvim
+
+      # Copilot
       {
         plugin = pkgsUnstable.vimPlugins.lz-n;
         type = "lua";
@@ -44,45 +63,33 @@ in
       }
       pkgsUnstable.vimPlugins.copilot-lua
       pkgsUnstable.vimPlugins.copilot-cmp
-      neoscroll-nvim
-      ghcid
-      citruszest-nvim
-      vim-monokai-tasty
+
+      # Editing
+      which-key-nvim
+      nvim-surround
       vim-commentary
+      guess-indent-nvim
+      yanky-nvim
+      text-case-nvim
+      todo-comments-nvim
+
+      # Treesitter
       nvim-treesitter
       nvim-treesitter-parsers.luadoc
       nvim-treesitter-parsers.vimdoc
-      nvim-surround
-      vim-bookmarks
-      vim-easymotion
-      auto-session
-      purescript-vim
-      vim-LanguageTool
-      todo-comments-nvim
-      vim-fugitive
+
+      # Haskell
+      haskell-vim
       pkgsUnstable.vimPlugins.haskell-tools-nvim
-      telescope_hoogle
-      nvim-ufo
-      nvim-lint
-      trouble-nvim
-      nvim-web-devicons
-      hover-nvim
-      nvim-cmp
-      cmp-nvim-lsp
-      text-case-nvim
-      plenary-nvim
+      ghcid
+
+      # Other languages
+      dhall-vim
+      purescript-vim
+
+      # Session & misc
+      auto-session
       pkgsUnstable.vimPlugins.yazi-nvim
-      golden-ratio
-      yanky-nvim
-      kanagawa-nvim
-      lualine-nvim
-      lualine-lsp-progress
-      pkgsUnstable.vimPlugins.telescope-live-grep-args-nvim
-      vim-dasht
-      dash-vim
-      vim-signify
-      # lsp_lines-nvim
-      # coc-ltex
     ];
     extraLuaConfig = ''
       if not vim.uv then
@@ -231,25 +238,20 @@ in
         { "<leader>bl", "<Plug>BookmarkShowAll", desc = "List all" },
 
         -- ══════════════════════════════════════════
-        -- Docs (Dash)
-        -- ══════════════════════════════════════════
-        { "<leader>d", group = "Docs" },
-        { "<leader>dw", "<cmd>call Dasht(dasht#cursor_search_terms())<CR>", desc = "Word" },
-        { "<leader>ds", "y:<C-U>call Dasht(getreg(0))<CR>", desc = "Selection", mode = "v" },
-        { "<leader>df", "<cmd>Dasht<CR>", desc = "Free search" },
-        { "<leader>dg", "<cmd>Dash<CR>", desc = "GUI" },
-
-        -- ══════════════════════════════════════════
         -- Text case
         -- ══════════════════════════════════════════
         { "<leader>t", group = "Text case" },
 
         -- ══════════════════════════════════════════
-        -- Other/Misc
+        -- Jump (flash.nvim)
         -- ══════════════════════════════════════════
-        { "<leader>j", group = "Misc" },
+        { "<leader>j", group = "Jump" },
+        { "<leader>jj", function() require("flash").jump() end, desc = "Jump to" },
+        { "<leader>jt", function() require("flash").treesitter() end, desc = "Treesitter select" },
+        { "<leader>jw", function() require("flash").jump({pattern = vim.fn.expand("<cword>")}) end, desc = "Jump to word" },
+        { "<leader>jl", function() require("flash").jump({search = {mode = "search", max_length = 0}, label = {after = {0, 0}}, pattern = "^"}) end, desc = "Jump to line" },
         { "<leader>js", "<Plug>(golden_ratio_resize)<CR>", desc = "Golden ratio resize" },
-        { "<leader>jt", "<Plug>(golden_ratio_toggle)<CR>", desc = "Golden ratio toggle" },
+        { "<leader>jg", "<Plug>(golden_ratio_toggle)<CR>", desc = "Golden ratio toggle" },
 
         -- ══════════════════════════════════════════
         -- Quick actions (no submenu)
@@ -302,7 +304,22 @@ in
       telescope.load_extension("live_grep_args")
 
       require('neoscroll').setup({})
-      vim.g["languagetool_jar"] = '/Users/mateusz.urban/LanguageTool-5.9/languagetool-commandline.jar'
+
+      -- Flash.nvim setup
+      require('flash').setup({
+        labels = "asdfghjklqwertyuiopzxcvbnm",
+        search = { mode = "fuzzy" },
+        label = { uppercase = false },
+        modes = {
+          char = { enabled = true },  -- Enhanced f/t/F/T motions
+          search = { enabled = false },  -- Don't integrate with / search
+        },
+      })
+
+      -- Flash keymaps (s to jump, S for treesitter)
+      vim.keymap.set({"n", "x", "o"}, "s", function() require("flash").jump() end, { desc = "Flash jump" })
+      vim.keymap.set({"n", "x", "o"}, "S", function() require("flash").treesitter() end, { desc = "Flash treesitter" })
+      vim.keymap.set("o", "r", function() require("flash").remote() end, { desc = "Remote flash" })
 
       local hl_groups = { 'DiagnosticUnderlineError' }
       for _, hl in ipairs(hl_groups) do
@@ -360,9 +377,6 @@ in
         }
       }
 
-      -- The nvim-cmp almost supports LSP's capabilities so You should advertise it to LSP servers..
-      local capabilities = require('cmp_nvim_lsp').default_capabilities()
-
       require('kanagawa').setup()
       require("kanagawa").load("wave")
 
@@ -374,32 +388,28 @@ in
       set nu rnu
       set mouse=nicr
       set diffopt+=vertical
-
-      " colorscheme citruszest
-      " colorscheme onedark
       filetype plugin indent on
 
       command -nargs=+ LspHover lua vim.lsp.buf.hover()
       set keywordprg=:LspHover
+
+      " Window resizing
       noremap <silent> <C-S-Left> :vertical resize -3<CR>
       noremap <silent> <C-S-Right> :vertical resize +3<CR>
 
+      " GHCID
       let g:ghcid_background = 1
 
-      :tnoremap <A-Left> <m-b>
-      :tnoremap <A-Right> <m-f>
-      :tnoremap <Esc> <C-\><C-n>
+      " Terminal mappings
+      tnoremap <A-Left> <m-b>
+      tnoremap <A-Right> <m-f>
+      tnoremap <Esc> <C-\><C-n>
 
+      " Golden ratio
       let g:golden_ratio_exclude_nonmodifiable = 1
       let g:golden_ratio_autocommand = 0
 
       autocmd TermOpen * setlocal nonumber norelativenumber
-      if !exists("s:lib_paths")
-        let s:lib_paths = []
-      endif
-
-      let &l:path = systemlist("hs-paths")->join(",")
-
     '';
   };
 }
