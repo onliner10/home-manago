@@ -68,7 +68,6 @@ in
       nvim-web-devicons
       hover-nvim
       nvim-cmp
-      nvim-ufo
       cmp-nvim-lsp
       text-case-nvim
       plenary-nvim
@@ -108,90 +107,167 @@ in
 
       local ht = require('haskell-tools')
       local wk = require("which-key")
-      wk.register({
-        f = {
-          name = "telescope", -- optional group name
-          f = { "<cmd>Telescope find_files shorten_path=true<cr>", "Find File" }, 
-          g = { ":lua require('telescope').extensions.live_grep_args.live_grep_args()<CR>", "Grep" }, 
-          w = { "<cmd>Telescope grep_string<cr>", "Grep word" }, 
-          o = { "<cmd>Telescope oldfiles shorten_path=true<cr>", "Recent files" }, 
-          r = { "<cmd>Telescope file_browser<cr>", "File explorer root" }, 
-          e = { "<cmd>Telescope file_browser path=%:p:h select_buffer=true<cr>", "File explorer here" }, 
-          b = { "<cmd>Telescope buffers shorten_path=true<cr>", "Buffers" }, 
-          h = { "<cmd>Telescope hoogle<cr>", "Hoogle" }, 
-          c = { "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>", "Symbols" }, 
-          j = { "<cmd>Telescope jumplist<cr>", "Jump list" }, 
-          m = { "<cmd>Telescope marks<cr>", "Marks" }, 
-          t = { ":TodoTelescope keywords=FIX<CR>", "List TODOs (FIX)" }, 
-          y = { function() require("telescope").extensions.yank_history.yank_history({ }) end, "Yanky" },
-          s = { function() require'telescope.builtin'.find_files({find_command={'fd', vim.fn.expand("<cword>")}}) end, "Find selected"}
-        },
-        c = {
-          h = { "<cmd>Telescope ht hoogle_signature<CR>", "Hoogle this!" },
-          f = { "<cmd> Telescope ht package_files<CR>", "Find package files" },
-          g = { "<cmd> Telescope ht package_grep<CR>", "Package grep" },
-          d = { "<cmd>lua vim.diagnostic.open_float(0, { scope = 'line' })<CR>", "Diagnostic" },
-          l = { "<cmd>lua require('haskell-tools').log.nvim_open_logfile()<CR>", "Logs"},
-          k = { "<cmd>lua require('haskell-tools').log.nvim_open_hls_logfile()<CR>", "HLS Logs"},
-          j = { "<cmd>lua require('haskell-tools').log.set_level(vim.log.levels.DEBUG)<CR>", "HLS debug"},
-          r = { function() ht.repl.toggle(vim.api.nvim_buf_get_name(0)) end, "Repl"},
-          g = { "<cmd>Ghcid -c 'cabal repl --enable-multi-repl all'<CR>", "Start GHCID" },
-          s = { "<cmd>GhcidKill<CR><cmd>Hls start<CR>", "Use HLS"},
-          q = { "<cmd>TroubleToggle quickfix<CR>", "Trobule"},
-          t = { "<cmd>Ghcid<CR>", "Ghcid toggle"}
-        },
-        b = {
-          name = "Bookmarks",
-          m = { "<Plug>BookmarkToggle", "Toggle bookmark" }, 
-          a = { "<Plug>BookmarkAnnotate", "Annotate" }, 
-          n = { "<Plug>BookmarkNext", "Next bookmark" }, 
-          p = { "<Plug>BookmarkPrev", "Previous bookmark" }, 
-          l = { "<Plug>BookmarkShowAll", "List bookmarks" }, 
-        },
-        t = {
-          name = "Trouble",
-          t = { "<cmd>TroubleToggle<CR>", "Trouble" },
-          q = { "<cmd>Trouble quickfix<CR>", "Quickfix" },
-          g = { "<cmd>Ghcid<CR>", "Ghcid toggle" },
-        },
-        g = {
-          name = "GHCI",
-          t = { function() ht.repl.toggle() end, "Toggle repl" },
-          q = { function() ht.repl.quit() end, "Quit repl" },
-          c = { function() ht.repl.cword_type() end, "Type of word under cursor" },
-          i = { function() ht.repl.cword_info() end, "Info on word under cursor" },
-          r = { function() ht.repl.reload() end, "Reload repl" },
-        },
-        d = {
-          name = "Diffview",
-          o = { "<cmd>DiffviewOpen<CR>", "Open", mode="n" },
-          q = { "<cmd>DiffviewClose<CR>", "Quit", mode="n" },
-          r = { "<cmd>DiffviewFileHistory<cr>", "Repo history" },
-          m = { "<cmd>DiffviewOpen master<CR>", "Diffview master", mode="n" },
-          f = { "<cmd>DiffviewFileHistory --follow %<cr>", "File history" },
-          l = { "<Cmd>.DiffviewFileHistory --follow<CR>", "Line history" },
-          v = { "<Esc><Cmd>'<,'>DiffviewFileHistory --follow<CR>", "Range history", mode = "v" },
-          b = { "<cmd>DiffviewToggleFiles<CR>", "Toggle files" },
-        },
-        h = {
-          name = "Help (dash)",
-          w = { "<cmd>call Dasht(dasht#cursor_search_terms())<CR>", "Search word" },
-          v = { "y:<C-U>call Dasht(getreg(0))", mode="v", "Search selection" },
-          f = { "<cmd>Dasht<CR>", "Free search" },
-          e = { "<cmd>Dash<CR>", "Word GUI"},
-        },
-        j = {
-          name = "Other",
-          s = { "<Plug>(golden_ratio_resize)<CR>", "Godlen ratio resize" },
-          t = { "<Plug>(golden_ratio_toggle)<CR>", "Godlen ratio toggle" },
-        },
-      }, { prefix = "<leader>" })
-      wk.setup {}
 
-      require('onedark').setup {
-         style = 'darker'
+      wk.setup {
+        delay = 200,  -- Show popup quickly for discoverability
+        icons = { mappings = false },
       }
-      require('onedark').load()
+
+      wk.add({
+        -- ══════════════════════════════════════════
+        -- Find (Telescope)
+        -- ══════════════════════════════════════════
+        { "<leader>f", group = "Find" },
+        { "<leader>ff", "<cmd>Telescope find_files<cr>", desc = "Files" },
+        { "<leader>fg", ":lua require('telescope').extensions.live_grep_args.live_grep_args()<CR>", desc = "Grep" },
+        { "<leader>fw", "<cmd>Telescope grep_string<cr>", desc = "Word (grep)" },
+        { "<leader>fo", "<cmd>Telescope oldfiles<cr>", desc = "Old/recent files" },
+        { "<leader>fb", "<cmd>Telescope buffers<cr>", desc = "Buffers" },
+        { "<leader>fj", "<cmd>Telescope jumplist<cr>", desc = "Jumplist" },
+        { "<leader>fm", "<cmd>Telescope marks<cr>", desc = "Marks" },
+        { "<leader>ft", ":TodoTelescope keywords=FIX<CR>", desc = "TODOs" },
+        { "<leader>fy", function() require("telescope").extensions.yank_history.yank_history({}) end, desc = "Yank history" },
+        { "<leader>fc", "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>", desc = "Code symbols" },
+        { "<leader>fn", function() require('telescope.builtin').find_files({find_command={'fd', vim.fn.expand("<cword>")}}) end, desc = "Word as filename" },
+
+        -- Fallback searches (when LSP is stuck)
+        { "<leader>fd", function()
+            local word = vim.fn.expand("<cword>")
+            require('telescope.builtin').grep_string({search = "^" .. word .. " ::", regex = true})
+          end, desc = "Definition (Haskell ::)" },
+        { "<leader>f=", function()
+            local word = vim.fn.expand("<cword>")
+            require('telescope.builtin').grep_string({search = "^" .. word .. " =", regex = true})
+          end, desc = "Definition (= binding)" },
+        { "<leader>fW", function()
+            local word = vim.fn.expand("<cword>")
+            require('telescope.builtin').grep_string({search = "\\b" .. word .. "\\b", regex = true})
+          end, desc = "Word (exact match)" },
+        { "<leader>fr", "<cmd>Telescope resume<cr>", desc = "Resume last search" },
+
+        -- File explorer
+        { "<leader>e", group = "Explorer" },
+        { "<leader>ee", "<cmd>Telescope file_browser path=%:p:h select_buffer=true<cr>", desc = "Here" },
+        { "<leader>er", "<cmd>Telescope file_browser<cr>", desc = "Root" },
+        { "<leader>ey", "<cmd>Yazi<cr>", desc = "Yazi" },
+
+        -- ══════════════════════════════════════════
+        -- LSP (code intelligence)
+        -- ══════════════════════════════════════════
+        { "<leader>l", group = "LSP" },
+        { "<leader>ld", vim.lsp.buf.definition, desc = "Definition" },
+        { "<leader>lD", vim.lsp.buf.declaration, desc = "Declaration" },
+        { "<leader>lt", vim.lsp.buf.type_definition, desc = "Type definition" },
+        { "<leader>lr", "<cmd>Telescope lsp_references<cr>", desc = "References" },
+        { "<leader>li", vim.lsp.buf.implementation, desc = "Implementation" },
+        { "<leader>ln", vim.lsp.buf.rename, desc = "Rename" },
+        { "<leader>la", vim.lsp.buf.code_action, desc = "Action" },
+        { "<leader>lk", vim.lsp.buf.hover, desc = "Hover docs" },
+        { "<leader>ls", vim.lsp.buf.signature_help, desc = "Signature" },
+        { "<leader>lf", vim.lsp.buf.format, desc = "Format" },
+        { "<leader>ll", vim.diagnostic.open_float, desc = "Line diagnostic" },
+        { "<leader>lc", vim.lsp.codelens.run, desc = "Codelens" },
+
+        -- ══════════════════════════════════════════
+        -- Git
+        -- ══════════════════════════════════════════
+        { "<leader>g", group = "Git" },
+        { "<leader>go", "<cmd>DiffviewOpen<CR>", desc = "Open diff" },
+        { "<leader>gq", "<cmd>DiffviewClose<CR>", desc = "Quit diff" },
+        { "<leader>gm", "<cmd>DiffviewOpen master<CR>", desc = "Diff vs master" },
+        { "<leader>gh", "<cmd>DiffviewFileHistory --follow %<cr>", desc = "File history" },
+        { "<leader>gl", "<Cmd>.DiffviewFileHistory --follow<CR>", desc = "Line history" },
+        { "<leader>gr", "<cmd>DiffviewFileHistory<cr>", desc = "Repo history" },
+        { "<leader>gv", "<Esc><Cmd>'<,'>DiffviewFileHistory --follow<CR>", desc = "Selection history", mode = "v" },
+        { "<leader>gt", "<cmd>DiffviewToggleFiles<CR>", desc = "Toggle files panel" },
+        { "<leader>gs", "<cmd>Git<CR>", desc = "Status (fugitive)" },
+        { "<leader>gb", "<cmd>Git blame<CR>", desc = "Blame" },
+
+        -- ══════════════════════════════════════════
+        -- Haskell
+        -- ══════════════════════════════════════════
+        { "<leader>h", group = "Haskell" },
+        { "<leader>hh", "<cmd>Telescope hoogle<cr>", desc = "Hoogle search" },
+        { "<leader>hs", "<cmd>Telescope ht hoogle_signature<CR>", desc = "Hoogle signature" },
+        { "<leader>hf", "<cmd>Telescope ht package_files<CR>", desc = "Package files" },
+        { "<leader>hg", "<cmd>Telescope ht package_grep<CR>", desc = "Package grep" },
+        { "<leader>he", function() ht.lsp.buf_eval_all() end, desc = "Eval all" },
+        { "<leader>hl", function() ht.log.nvim_open_logfile() end, desc = "Logs" },
+        { "<leader>hL", function() ht.log.nvim_open_hls_logfile() end, desc = "HLS Logs" },
+
+        -- GHCI/REPL
+        { "<leader>hr", group = "REPL" },
+        { "<leader>hrt", function() ht.repl.toggle() end, desc = "Toggle" },
+        { "<leader>hrb", function() ht.repl.toggle(vim.api.nvim_buf_get_name(0)) end, desc = "Toggle (buffer)" },
+        { "<leader>hrq", function() ht.repl.quit() end, desc = "Quit" },
+        { "<leader>hrl", function() ht.repl.reload() end, desc = "Reload" },
+        { "<leader>hrc", function() ht.repl.cword_type() end, desc = "Type of word" },
+        { "<leader>hri", function() ht.repl.cword_info() end, desc = "Info on word" },
+
+        -- GHCID
+        { "<leader>hd", group = "GHCID" },
+        { "<leader>hds", "<cmd>Ghcid -c 'cabal repl --enable-multi-repl all'<CR>", desc = "Start" },
+        { "<leader>hdt", "<cmd>Ghcid<CR>", desc = "Toggle" },
+        { "<leader>hdq", "<cmd>GhcidKill<CR>", desc = "Kill" },
+        { "<leader>hdh", "<cmd>GhcidKill<CR><cmd>Hls start<CR>", desc = "Switch to HLS" },
+
+        -- ══════════════════════════════════════════
+        -- Trouble (diagnostics)
+        -- ══════════════════════════════════════════
+        { "<leader>x", group = "Trouble" },
+        { "<leader>xx", "<cmd>TroubleToggle<CR>", desc = "Toggle" },
+        { "<leader>xq", "<cmd>Trouble quickfix<CR>", desc = "Quickfix" },
+        { "<leader>xw", "<cmd>Trouble workspace_diagnostics<CR>", desc = "Workspace" },
+        { "<leader>xd", "<cmd>Trouble document_diagnostics<CR>", desc = "Document" },
+
+        -- ══════════════════════════════════════════
+        -- Bookmarks
+        -- ══════════════════════════════════════════
+        { "<leader>b", group = "Bookmarks" },
+        { "<leader>bt", "<Plug>BookmarkToggle", desc = "Toggle" },
+        { "<leader>ba", "<Plug>BookmarkAnnotate", desc = "Annotate" },
+        { "<leader>bn", "<Plug>BookmarkNext", desc = "Next" },
+        { "<leader>bp", "<Plug>BookmarkPrev", desc = "Previous" },
+        { "<leader>bl", "<Plug>BookmarkShowAll", desc = "List all" },
+
+        -- ══════════════════════════════════════════
+        -- Docs (Dash)
+        -- ══════════════════════════════════════════
+        { "<leader>d", group = "Docs" },
+        { "<leader>dw", "<cmd>call Dasht(dasht#cursor_search_terms())<CR>", desc = "Word" },
+        { "<leader>ds", "y:<C-U>call Dasht(getreg(0))<CR>", desc = "Selection", mode = "v" },
+        { "<leader>df", "<cmd>Dasht<CR>", desc = "Free search" },
+        { "<leader>dg", "<cmd>Dash<CR>", desc = "GUI" },
+
+        -- ══════════════════════════════════════════
+        -- Text case
+        -- ══════════════════════════════════════════
+        { "<leader>t", group = "Text case" },
+
+        -- ══════════════════════════════════════════
+        -- Other/Misc
+        -- ══════════════════════════════════════════
+        { "<leader>j", group = "Misc" },
+        { "<leader>js", "<Plug>(golden_ratio_resize)<CR>", desc = "Golden ratio resize" },
+        { "<leader>jt", "<Plug>(golden_ratio_toggle)<CR>", desc = "Golden ratio toggle" },
+
+        -- ══════════════════════════════════════════
+        -- Quick actions (no submenu)
+        -- ══════════════════════════════════════════
+        { "<leader>w", "<cmd>w<CR>", desc = "Save" },
+        { "<leader>q", "<cmd>q<CR>", desc = "Quit" },
+        { "<leader>-", "<cmd>Yazi<cr>", desc = "Yazi" },
+
+        -- Navigate back/forward
+        { "<leader>[", "<C-o>", desc = "Jump back" },
+        { "<leader>]", "<C-i>", desc = "Jump forward" },
+      })
+
+      -- Direct shortcuts for most common LSP actions (no leader needed)
+      vim.keymap.set('n', 'K', vim.lsp.buf.hover, { desc = 'Hover docs' })
+      vim.keymap.set('n', 'gd', vim.lsp.buf.definition, { desc = 'Go to definition' })
+      vim.keymap.set('n', 'gr', '<cmd>Telescope lsp_references<cr>', { desc = 'References' })
+      vim.keymap.set('n', 'gt', vim.lsp.buf.type_definition, { desc = 'Type definition' })
 
       local telescope = require('telescope')
 
@@ -228,23 +304,6 @@ in
       require('neoscroll').setup({})
       vim.g["languagetool_jar"] = '/Users/mateusz.urban/LanguageTool-5.9/languagetool-commandline.jar'
 
-      local bufnr = vim.api.nvim_get_current_buf()
-      local opts = { noremap = true, silent = true, buffer = bufnr, }
-      -- haskell-language-server relies heavily on codeLenses,
-      -- so auto-refresh (see advanced configuration) is enabled by default
-      vim.keymap.set('n', '<space>cl', vim.lsp.codelens.run, opts)
-      -- Hoogle search for the type signature of the definition under the cursor
-      vim.keymap.set('n', '<space>hs', ht.hoogle.hoogle_signature, opts)
-      -- Evaluate all code snippets
-      vim.keymap.set('n', '<space>ea', ht.lsp.buf_eval_all, opts)
-      -- Toggle a GHCi repl for the current package
-      vim.keymap.set('n', '<leader>rr', ht.repl.toggle, opts)
-      -- Toggle a GHCi repl for the current buffer
-      vim.keymap.set('n', '<leader>rf', function()
-        ht.repl.toggle(vim.api.nvim_buf_get_name(0))
-      end, opts)
-      vim.keymap.set('n', '<leader>rq', ht.repl.quit, opts)
-
       local hl_groups = { 'DiagnosticUnderlineError' }
       for _, hl in ipairs(hl_groups) do
         vim.cmd.highlight(hl .. ' gui=undercurl')
@@ -270,31 +329,7 @@ in
           end
       })
 
-      require("yazi").setup({
-        keys = {
-          {
-            "<leader>-",
-            "<cmd>Yazi<cr>",
-            desc = "Open yazi at the current file",
-          },
-          {
-            -- Open in the current working directory
-            "<leader>cw",
-            "<cmd>Yazi cwd<cr>",
-            desc = "Open the file manager in nvim's working directory" ,
-          },
-          {
-            -- NOTE: this requires a version of yazi that includes
-            -- https://github.com/sxyazi/yazi/pull/1305 from 2024-07-18
-            '<c-up>',
-            "<cmd>Yazi toggle<cr>",
-            desc = "Resume the last yazi session",
-          }
-        }})
-
-      vim.keymap.set("n", "<leader>-", function()
-        require("yazi").yazi()
-      end)
+      require("yazi").setup({})
 
       -- Yanky
       require("yanky").setup()
@@ -319,8 +354,8 @@ in
         },
         mapping = {
           ['<CR>'] = cmp.mapping.confirm({select = false}),
-          ['<S-Tab>'] = cmp.mapping.select_prev_item(select_opts),
-          ['<Tab>'] = cmp.mapping.select_next_item(select_opts),
+          ['<S-Tab>'] = cmp.mapping.select_prev_item({behavior = cmp.SelectBehavior.Select}),
+          ['<Tab>'] = cmp.mapping.select_next_item({behavior = cmp.SelectBehavior.Select}),
           ['<C-Space>'] = cmp.mapping.complete(),
         }
       }
