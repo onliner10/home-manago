@@ -27,27 +27,6 @@ in
   # release notes.
   home.stateVersion = "24.05"; # Please read the comment before changing.
 
-  home.activation = {
-    copyApplications = let
-      apps = pkgs.buildEnv {
-        name = "home-manager-applications";
-        paths = config.home.packages;
-        pathsToLink = "/Applications";
-      };
-    in lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      baseDir="$HOME/Documents/Applications/Home Manager Apps"
-      if [ -d "$baseDir" ]; then
-        rm -rf "$baseDir"
-      fi
-      mkdir -p "$baseDir"
-      for appFile in ${apps}/Applications/*; do
-        target="$baseDir/$(basename "$appFile")"
-        $DRY_RUN_CMD cp ''${VERBOSE_ARG:+-v} -fHRL "$appFile" "$baseDir"
-        $DRY_RUN_CMD chmod ''${VERBOSE_ARG:+-v} -R +w "$target"
-      done
-    '';
-  };
-
 
   # The home.packages option allows you to install Nix packages into your
   # environment.
@@ -76,8 +55,6 @@ in
     pkgs.multitail
     pkgs.openapi-tui
     pkgs.yazi
-    pkgs.http-prompt
-    pkgs.drawio
     pkgs.dasht
     pkgs.nodejs_24
     pkgs.git
