@@ -85,6 +85,7 @@ in
     pkgs.httpie
     pkgs.node2nix
     claude-code
+    pkgs.zellij
     # pkgsUnstable.claude-code
 
     # # I-- t is sometimes useful to fine-tune packages, for example, by applying

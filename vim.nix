@@ -238,6 +238,15 @@ in
         { "<leader>bl", "<Plug>BookmarkShowAll", desc = "List all" },
 
         -- ══════════════════════════════════════════
+        -- Clipboard (system)
+        -- ══════════════════════════════════════════
+        { "<leader>y", group = "Clipboard" },
+        { "<leader>yy", '"+y', desc = "Yank to clipboard", mode = {"n", "v"} },
+        { "<leader>yl", '"+yy', desc = "Yank line to clipboard" },
+        { "<leader>yp", '"+p', desc = "Paste from clipboard" },
+        { "<leader>yP", '"+P', desc = "Paste before from clipboard" },
+
+        -- ══════════════════════════════════════════
         -- Text case
         -- ══════════════════════════════════════════
         { "<leader>t", group = "Text case" },
