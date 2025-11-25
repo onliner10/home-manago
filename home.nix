@@ -63,6 +63,7 @@ in
     pkgs.node2nix
     claude-code
     pkgs.zellij
+    pkgsUnstable.gemini-cli
     # pkgsUnstable.claude-code
 
     # # I-- t is sometimes useful to fine-tune packages, for example, by applying
@@ -248,6 +249,16 @@ in
     oh-my-zsh = {
       enable = true;
       # theme = "bureau";
+    };
+  };
+
+  programs.git = {
+    enable = true;
+    settings.alias = {
+      co = "checkout";
+      br = "branch";
+      ci = "commit";
+      st = "status";
     };
   };
 }
