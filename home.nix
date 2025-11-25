@@ -63,6 +63,7 @@ in
     pkgs.node2nix
     claude-code
     pkgs.zellij
+    pkgs.ripgrep
     pkgsUnstable.gemini-cli
     # pkgsUnstable.claude-code
 
