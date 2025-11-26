@@ -65,6 +65,7 @@ in
     pkgs.zellij
     pkgs.ripgrep
     pkgsUnstable.gemini-cli
+    pkgsUnstable.codex
     # pkgsUnstable.claude-code
 
     # # I-- t is sometimes useful to fine-tune packages, for example, by applying
