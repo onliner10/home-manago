@@ -61,6 +61,7 @@ in
     pkgs.dasht
     pkgs.git-lfs
     pkgs.gnupg
+    pkgs.zellij
   ];
  
   programs.direnv = {
