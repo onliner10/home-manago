@@ -214,7 +214,7 @@ in
 
   programs.git = {
     enable = true;
-    settings.alias = {
+    aliases = {
       co = "checkout";
       br = "branch";
       ci = "commit";
