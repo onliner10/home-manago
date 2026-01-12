@@ -1,14 +1,22 @@
 { config, pkgs, lib, ... }:
 
 {
+  imports = [
+    ./home.nix
+  ];
+
   # macOS-specific configuration
+  home.packages = [
+    # Packages specific to macOS can go here. 
+    # Generic packages are in home.nix
+  ];
 
   home.activation = {
     copyApplications = let
       apps = pkgs.buildEnv {
         name = "home-manager-applications";
         paths = config.home.packages;
-        pathsToLink = "/Applications";
+        pathsToLink = [ "/Applications" ];
       };
     in lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       baseDir="$HOME/Documents/Applications/Home Manager Apps"

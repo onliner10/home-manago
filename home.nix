@@ -1,7 +1,10 @@
 { config, pkgs, lib, ... }:
- 
 let
-  pkgsUnstable = import <nixpkgs-unstable> {};
+  claude-code = (import ../../dotfiles/claude { pkgs = pkgs; nodejs = pkgs.nodejs_24; })."@anthropic-ai/claude-code";
+  pkgsUnstable = import <nixpkgs-unstable> {
+    config.allowUnfree = true;
+    config.allowUnfreePredicate = _: true;
+  };
 in
 {
   imports = [
@@ -62,6 +65,14 @@ in
     pkgs.git-lfs
     pkgs.gnupg
     pkgs.zellij
+    pkgs.nodejs_24
+    pkgs.git
+    pkgs.httpie
+    pkgs.node2nix
+    claude-code
+    pkgs.ripgrep
+    pkgsUnstable.gemini-cli
+    pkgsUnstable.codex
   ];
  
   programs.direnv = {
@@ -81,22 +92,21 @@ in
       set -g default-command ${pkgs.zsh}/bin/zsh
       set -g mouse on
       set -ga terminal-overrides ',*256color*:smcup@:rmcup@'
- 
+
       set -g prefix C-a
       unbind-key C-b
       bind-key C-a send-prefix
- 
+
       # vim-like pane switching
-      bind -r k select-pane -U 
-      bind -r j select-pane -D 
-      bind -r h select-pane -L 
-      bind -r l select-pane -R 
- 
-      unbind C-Up   
-      unbind C-Down 
-      unbind C-Left 
+      bind -r k select-pane -U
+      bind -r j select-pane -D
+      bind -r h select-pane -L
+      bind -r l select-pane -R
+
+      unbind C-Up
+      unbind C-Down
+      unbind C-Left
       unbind C-Right
- 
     '';
     plugins = with pkgs.tmuxPlugins; [
       sensible
@@ -114,7 +124,7 @@ in
       }
     ];
   };
- 
+
   programs.alacritty = {
     enable = true;
     settings = {
@@ -199,6 +209,16 @@ in
     oh-my-zsh = {
       enable = true;
       # theme = "bureau";
+    };
+  };
+
+  programs.git = {
+    enable = true;
+    settings.alias = {
+      co = "checkout";
+      br = "branch";
+      ci = "commit";
+      st = "status";
     };
   };
 }

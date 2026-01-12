@@ -1,5 +1,5 @@
 { config, pkgs, lib, ... }:
- 
+
 let
   pkgsUnstable = import <nixpkgs-unstable> {};
 in
@@ -9,21 +9,45 @@ in
     defaultEditor = true;
     package = pkgsUnstable.neovim-unwrapped;
     plugins = with pkgs.vimPlugins; [
-      guess-indent-nvim
-      dhall-vim
+      # Core
+      plenary-nvim
+      nvim-web-devicons
+
+      # UI
+      kanagawa-nvim
+      lualine-nvim
+      lualine-lsp-progress
+      neoscroll-nvim
+      golden-ratio
+      citruszest-nvim
+      vim-monokai-tasty
+      hover-nvim
+      dash-vim
+
+      # Telescope
       telescope-nvim
-      which-key-nvim
-      tokyonight-nvim
-      # coc-nvim
-      haskell-vim
-      onedark-nvim
-      cyberdream-nvim
       telescope-file-browser-nvim
-      conflict-marker-vim
+      telescope_hoogle
+      pkgsUnstable.vimPlugins.telescope-live-grep-args-nvim
+
+      # Navigation
+      pkgsUnstable.vimPlugins.flash-nvim
+      nvim-ufo
+      vim-bookmarks
+      vim-easymotion
+
+      # Git
+      vim-fugitive
+      vim-signify
       diffview-nvim
-      context-vim
-      #telescope-coc-nvim
-      #copilot-vim
+      conflict-marker-vim
+
+      # LSP & Completion
+      nvim-cmp
+      cmp-nvim-lsp
+      trouble-nvim
+
+      # Copilot
       {
         plugin = pkgsUnstable.vimPlugins.lz-n;
         type = "lua";
@@ -44,52 +68,42 @@ in
       }
       pkgsUnstable.vimPlugins.copilot-lua
       pkgsUnstable.vimPlugins.copilot-cmp
-      neoscroll-nvim
-      ghcid
-      citruszest-nvim
-      vim-monokai-tasty
+
+      # Editing
+      which-key-nvim
+      nvim-surround
       vim-commentary
+      guess-indent-nvim
+      yanky-nvim
+      text-case-nvim
+      todo-comments-nvim
+      vim-LanguageTool
+
+      # Treesitter
       nvim-treesitter
       nvim-treesitter-parsers.luadoc
       nvim-treesitter-parsers.vimdoc
-      nvim-surround
-      vim-bookmarks
-      vim-easymotion
-      auto-session
-      purescript-vim
-      vim-LanguageTool
-      todo-comments-nvim
-      vim-fugitive
+
+      # Haskell
+      haskell-vim
       pkgsUnstable.vimPlugins.haskell-tools-nvim
-      telescope_hoogle
-      nvim-ufo
-      nvim-lint
-      trouble-nvim
-      nvim-web-devicons
-      hover-nvim
-      nvim-cmp
-      nvim-ufo
-      cmp-nvim-lsp
-      text-case-nvim
-      plenary-nvim
+      ghcid
+
+      # Other languages
+      dhall-vim
+      purescript-vim
+
+      # Session & misc
+      auto-session
       pkgsUnstable.vimPlugins.yazi-nvim
-      golden-ratio
-      yanky-nvim
-      kanagawa-nvim
-      lualine-nvim
-      lualine-lsp-progress
-      pkgsUnstable.vimPlugins.telescope-live-grep-args-nvim
       vim-dasht
-      dash-vim
-      # lsp_lines-nvim
-      # coc-ltex
     ];
     extraLuaConfig = ''
       if not vim.uv then
         vim.uv = vim.loop
       end
- 
- 
+
+
       require'lualine'.setup{
         sections = {},
         tabline = {
@@ -101,97 +115,180 @@ in
           lualine_z = {'location'}
         },
       }
- 
+  
       require('guess-indent').setup {}
       require("todo-comments").setup()
- 
+
       local ht = require('haskell-tools')
       local wk = require("which-key")
-      wk.register({
-        f = {
-          name = "telescope", -- optional group name
-          f = { "<cmd>Telescope find_files shorten_path=true<cr>", "Find File" }, 
-          g = { ":lua require('telescope').extensions.live_grep_args.live_grep_args()<CR>", "Grep" }, 
-          w = { "<cmd>Telescope grep_string<cr>", "Grep word" }, 
-          o = { "<cmd>Telescope oldfiles shorten_path=true<cr>", "Recent files" }, 
-          r = { "<cmd>Telescope file_browser<cr>", "File explorer root" }, 
-          e = { "<cmd>Telescope file_browser path=%:p:h select_buffer=true<cr>", "File explorer here" }, 
-          b = { "<cmd>Telescope buffers shorten_path=true<cr>", "Buffers" }, 
-          h = { "<cmd>Telescope hoogle<cr>", "Hoogle" }, 
-          c = { "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>", "Symbols" }, 
-          j = { "<cmd>Telescope jumplist<cr>", "Jump list" }, 
-          m = { "<cmd>Telescope marks<cr>", "Marks" }, 
-          t = { ":TodoTelescope keywords=FIX<CR>", "List TODOs (FIX)" }, 
-          y = { function() require("telescope").extensions.yank_history.yank_history({ }) end, "Yanky" },
-        },
-        c = {
-          h = { "<cmd>Telescope ht hoogle_signature<CR>", "Hoogle this!" },
-          f = { "<cmd> Telescope ht package_files<CR>", "Find package files" },
-          g = { "<cmd> Telescope ht package_grep<CR>", "Package grep" },
-          d = { "<cmd>lua vim.diagnostic.open_float(0, { scope = 'line' })<CR>", "Diagnostic" },
-          l = { "<cmd>lua require('haskell-tools').log.nvim_open_logfile()<CR>", "Logs"},
-          k = { "<cmd>lua require('haskell-tools').log.nvim_open_hls_logfile()<CR>", "HLS Logs"},
-          j = { "<cmd>lua require('haskell-tools').log.set_level(vim.log.levels.DEBUG)<CR>", "HLS debug"},
-          g = { "<cmd>Hls stop<CR><cmd>Ghcid -c 'cabal repl --enable-multi-repl all'<CR>", "Use GHCID" },
-          s = { "<cmd>GhcidKill<CR><cmd>Hls start<CR>", "Use HLS"},
-          q = { "<cmd>TroubleToggle quickfix<CR>", "Trobule"},
-          t = { "<cmd>Ghcid<CR>", "Ghcid toggle"}
-        },
-        b = {
-          name = "Bookmarks",
-          m = { "<Plug>BookmarkToggle", "Toggle bookmark" }, 
-          a = { "<Plug>BookmarkAnnotate", "Annotate" }, 
-          n = { "<Plug>BookmarkNext", "Next bookmark" }, 
-          p = { "<Plug>BookmarkPrev", "Previous bookmark" }, 
-          l = { "<Plug>BookmarkShowAll", "List bookmarks" }, 
-        },
-        t = {
-          name = "Trouble",
-          t = { "<cmd>TroubleToggle<CR>", "Trouble" },
-          q = { "<cmd>Trouble quickfix<CR>", "Quickfix" },
-          g = { "<cmd>Ghcid<CR>", "Ghcid toggle" },
-        },
-        g = {
-          name = "GHCI",
-          t = { function() ht.repl.toggle() end, "Toggle repl" },
-          q = { function() ht.repl.quit() end, "Quit repl" },
-          c = { function() ht.repl.cword_type() end, "Type of word under cursor" },
-          i = { function() ht.repl.cword_info() end, "Info on word under cursor" },
-          r = { function() ht.repl.reload() end, "Reload repl" },
-        },
-        d = {
-          name = "Diffview",
-          o = { "<cmd>DiffviewOpen<CR>", "Open", mode="n" },
-          q = { "<cmd>DiffviewClose<CR>", "Quit", mode="n" },
-          r = { "<cmd>DiffviewFileHistory<cr>", "Repo history" },
-          m = { "<cmd>DiffviewOpen master<CR>", "Diffview master", mode="n" },
-          f = { "<cmd>DiffviewFileHistory --follow %<cr>", "File history" },
-          l = { "<Cmd>.DiffviewFileHistory --follow<CR>", "Line history" },
-          v = { "<Esc><Cmd>'<,'>DiffviewFileHistory --follow<CR>", "Range history", mode = "v" },
-          b = { "<cmd>DiffviewToggleFiles<CR>", "Toggle files" },
-        },
-        h = {
-          name = "Help (dash)",
-          w = { "<cmd>call Dasht(dasht#cursor_search_terms())<CR>", "Search word" },
-          v = { "y:<C-U>call Dasht(getreg(0))", mode="v", "Search selection" },
-          f = { "<cmd>Dasht<CR>", "Free search" },
-          e = { "<cmd>Dash<CR>", "Word GUI"},
-        },
-        j = {
-          name = "Other",
-          s = { "<Plug>(golden_ratio_resize)<CR>", "Godlen ratio resize" },
-          t = { "<Plug>(golden_ratio_toggle)<CR>", "Godlen ratio toggle" },
-        },
-      }, { prefix = "<leader>" })
-      wk.setup {}
- 
-      require('onedark').setup {
-         style = 'darker'
+
+      wk.setup {
+        delay = 200,  -- Show popup quickly for discoverability
+        icons = { mappings = false },
       }
-      require('onedark').load()
- 
+
+      wk.add({
+        -- ══════════════════════════════════════════
+        -- Find (Telescope)
+        -- ══════════════════════════════════════════
+        { "<leader>f", group = "Find" },
+        { "<leader>ff", "<cmd>Telescope find_files<cr>", desc = "Files" },
+        { "<leader>fg", ":lua require('telescope').extensions.live_grep_args.live_grep_args()\n<CR>", desc = "Grep" },
+        { "<leader>fw", "<cmd>Telescope grep_string<cr>", desc = "Word (grep)" },
+        { "<leader>fo", "<cmd>Telescope oldfiles<cr>", desc = "Old/recent files" },
+        { "<leader>fb", "<cmd>Telescope buffers<cr>", desc = "Buffers" },
+        { "<leader>fj", "<cmd>Telescope jumplist<cr>", desc = "Jumplist" },
+        { "<leader>fm", "<cmd>Telescope marks<cr>", desc = "Marks" },
+        { "<leader>ft", ":TodoTelescope keywords=FIX<CR>", desc = "TODOs" },
+        { "<leader>fy", function() require("telescope").extensions.yank_history.yank_history({}) end, desc = "Yank history" },
+        { "<leader>fc", "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>", desc = "Code symbols" },
+        { "<leader>fn", function() require('telescope.builtin').find_files({find_command={'fd', vim.fn.expand("<cword>")}}) end, desc = "Word as filename" },
+
+        -- Fallback searches (when LSP is stuck)
+        { "<leader>fd", function()
+            local word = vim.fn.expand("<cword>")
+            require('telescope.builtin').grep_string({search = "^" .. word .. " ::", regex = true})
+          end, desc = "Definition (Haskell ::)" },
+        { "<leader>f=", function()
+            local word = vim.fn.expand("<cword>")
+            require('telescope.builtin').grep_string({search = "^" .. word .. " =", regex = true})
+          end, desc = "Definition (= binding)" },
+        { "<leader>fW", function()
+            local word = vim.fn.expand("<cword>")
+            require('telescope.builtin').grep_string({search = "\\b" .. word .. "\\b", regex = true})
+          end, desc = "Word (exact match)" },
+        { "<leader>fr", "<cmd>Telescope resume<cr>", desc = "Resume last search" },
+
+        -- File explorer
+        { "<leader>e", group = "Explorer" },
+        { "<leader>ee", "<cmd>Telescope file_browser path=%:p:h select_buffer=true<cr>", desc = "Here" },
+        { "<leader>er", "<cmd>Telescope file_browser<cr>", desc = "Root" },
+        { "<leader>ey", "<cmd>Yazi<cr>", desc = "Yazi" },
+
+        -- ══════════════════════════════════════════
+        -- LSP (code intelligence)
+        -- ══════════════════════════════════════════
+        { "<leader>l", group = "LSP" },
+        { "<leader>ld", vim.lsp.buf.definition, desc = "Definition" },
+        { "<leader>lD", vim.lsp.buf.declaration, desc = "Declaration" },
+        { "<leader>lt", vim.lsp.buf.type_definition, desc = "Type definition" },
+        { "<leader>lr", "<cmd>Telescope lsp_references<cr>", desc = "References" },
+        { "<leader>li", vim.lsp.buf.implementation, desc = "Implementation" },
+        { "<leader>ln", vim.lsp.buf.rename, desc = "Rename" },
+        { "<leader>la", vim.lsp.buf.code_action, desc = "Action" },
+        { "<leader>lk", vim.lsp.buf.hover, desc = "Hover docs" },
+        { "<leader>ls", vim.lsp.buf.signature_help, desc = "Signature" },
+        { "<leader>lf", vim.lsp.buf.format, desc = "Format" },
+        { "<leader>ll", vim.diagnostic.open_float, desc = "Line diagnostic" },
+        { "<leader>lc", vim.lsp.codelens.run, desc = "Codelens" },
+
+        -- ══════════════════════════════════════════
+        -- Git
+        -- ══════════════════════════════════════════
+        { "<leader>g", group = "Git" },
+        { "<leader>go", "<cmd>DiffviewOpen<CR>", desc = "Open diff" },
+        { "<leader>gq", "<cmd>DiffviewClose<CR>", desc = "Quit diff" },
+        { "<leader>gm", "<cmd>DiffviewOpen master<CR>", desc = "Diff vs master" },
+        { "<leader>gh", "<cmd>DiffviewFileHistory --follow %<cr>", desc = "File history" },
+        { "<leader>gl", "<Cmd>.DiffviewFileHistory --follow<CR>", desc = "Line history" },
+        { "<leader>gr", "<cmd>DiffviewFileHistory<cr>", desc = "Repo history" },
+        { "<leader>gv", "<Esc><Cmd>'<,'>DiffviewFileHistory --follow<CR>", desc = "Selection history", mode = "v" },
+        { "<leader>gt", "<cmd>DiffviewToggleFiles<CR>", desc = "Toggle files panel" },
+        { "<leader>gs", "<cmd>Git<CR>", desc = "Status (fugitive)" },
+        { "<leader>gb", "<cmd>Git blame<CR>", desc = "Blame" },
+
+        -- ══════════════════════════════════════════
+        -- Haskell
+        -- ══════════════════════════════════════════
+        { "<leader>h", group = "Haskell" },
+        { "<leader>hh", "<cmd>Telescope hoogle<cr>", desc = "Hoogle search" },
+        { "<leader>hs", "<cmd>Telescope ht hoogle_signature<CR>", desc = "Hoogle signature" },
+        { "<leader>hf", "<cmd>Telescope ht package_files<CR>", desc = "Package files" },
+        { "<leader>hg", "<cmd>Telescope ht package_grep<CR>", desc = "Package grep" },
+        { "<leader>he", function() ht.lsp.buf_eval_all() end, desc = "Eval all" },
+        { "<leader>hl", function() ht.log.nvim_open_logfile() end, desc = "Logs" },
+        { "<leader>hL", function() ht.log.nvim_open_hls_logfile() end, desc = "HLS Logs" },
+
+        -- GHCI/REPL
+        { "<leader>hr", group = "REPL" },
+        { "<leader>hrt", function() ht.repl.toggle() end, desc = "Toggle" },
+        { "<leader>hrb", function() ht.repl.toggle(vim.api.nvim_buf_get_name(0)) end, desc = "Toggle (buffer)" },
+        { "<leader>hrq", function() ht.repl.quit() end, desc = "Quit" },
+        { "<leader>hrl", function() ht.repl.reload() end, desc = "Reload" },
+        { "<leader>hrc", function() ht.repl.cword_type() end, desc = "Type of word" },
+        { "<leader>hri", function() ht.repl.cword_info() end, desc = "Info on word" },
+
+        -- GHCID
+        { "<leader>hd", group = "GHCID" },
+        { "<leader>hds", "<cmd>Ghcid -c 'cabal repl --enable-multi-repl all'<CR>", desc = "Start" },
+        { "<leader>hdt", "<cmd>Ghcid<CR>", desc = "Toggle" },
+        { "<leader>hdq", "<cmd>GhcidKill<CR>", desc = "Kill" },
+        { "<leader>hdh", "<cmd>GhcidKill<CR><cmd>Hls start<CR>", desc = "Switch to HLS" },
+
+        -- ══════════════════════════════════════════
+        -- Trouble (diagnostics)
+        -- ══════════════════════════════════════════
+        { "<leader>x", group = "Trouble" },
+        { "<leader>xx", "<cmd>TroubleToggle<CR>", desc = "Toggle" },
+        { "<leader>xq", "<cmd>Trouble quickfix<CR>", desc = "Quickfix" },
+        { "<leader>xw", "<cmd>Trouble workspace_diagnostics<CR>", desc = "Workspace" },
+        { "<leader>xd", "<cmd>Trouble document_diagnostics<CR>", desc = "Document" },
+
+        -- ══════════════════════════════════════════
+        -- Bookmarks
+        -- ══════════════════════════════════════════
+        { "<leader>b", group = "Bookmarks" },
+        { "<leader>bt", "<Plug>BookmarkToggle", desc = "Toggle" },
+        { "<leader>ba", "<Plug>BookmarkAnnotate", desc = "Annotate" },
+        { "<leader>bn", "<Plug>BookmarkNext", desc = "Next" },
+        { "<leader>bp", "<Plug>BookmarkPrev", desc = "Previous" },
+        { "<leader>bl", "<Plug>BookmarkShowAll", desc = "List all" },
+
+        -- ══════════════════════════════════════════
+        -- Clipboard (system)
+        -- ══════════════════════════════════════════
+        { "<leader>y", group = "Clipboard" },
+        { "<leader>yy", '"+y', desc = "Yank to clipboard", mode = {"n", "v"} },
+        { "<leader>yl", '"+yy', desc = "Yank line to clipboard" },
+        { "<leader>yp", '"+p', desc = "Paste from clipboard" },
+        { "<leader>yP", '"+P', desc = "Paste before from clipboard" },
+
+        -- ══════════════════════════════════════════
+        -- Text case
+        -- ══════════════════════════════════════════
+        { "<leader>t", group = "Text case" },
+
+        -- ══════════════════════════════════════════
+        -- Jump (flash.nvim)
+        -- ══════════════════════════════════════════
+        { "<leader>j", group = "Jump" },
+        { "<leader>jj", function() require("flash").jump() end, desc = "Jump to" },
+        { "<leader>jt", function() require("flash").treesitter() end, desc = "Treesitter select" },
+        { "<leader>jw", function() require("flash").jump({pattern = vim.fn.expand("<cword>")}) end, desc = "Jump to word" },
+        { "<leader>jl", function() require("flash").jump({search = {mode = "search", max_length = 0}, label = {after = {0, 0}}, pattern = "^"}) end, desc = "Jump to line" },
+        { "<leader>js", "<Plug>(golden_ratio_resize)<CR>", desc = "Golden ratio resize" },
+        { "<leader>jg", "<Plug>(golden_ratio_toggle)<CR>", desc = "Golden ratio toggle" },
+
+        -- ══════════════════════════════════════════
+        -- Quick actions (no submenu)
+        -- ══════════════════════════════════════════
+        { "<leader>w", "<cmd>w<CR>", desc = "Save" },
+        { "<leader>q", "<cmd>q<CR>", desc = "Quit" },
+        { "<leader>-", "<cmd>Yazi<cr>", desc = "Yazi" },
+
+        -- Navigate back/forward
+        { "<leader>[", "<C-o>", desc = "Jump back" },
+        { "<leader>]", "<C-i>", desc = "Jump forward" },
+      })
+
+      -- Direct shortcuts for most common LSP actions (no leader needed)
+      vim.keymap.set('n', 'K', vim.lsp.buf.hover, { desc = 'Hover docs' })
+      vim.keymap.set('n', 'gd', vim.lsp.buf.definition, { desc = 'Go to definition' })
+      vim.keymap.set('n', 'gr', '<cmd>Telescope lsp_references<cr>', { desc = 'References' })
+      vim.keymap.set('n', 'gt', vim.lsp.buf.type_definition, { desc = 'Type definition' })
+
       local telescope = require('telescope')
- 
+
       telescope.setup{
         defaults = {
           path_display={"truncate"} 
@@ -217,55 +314,54 @@ in
           }
         }
       }
- 
+
       telescope.load_extension "file_browser"
       telescope.load_extension('hoogle')
       telescope.load_extension("live_grep_args")
- 
+
       require('neoscroll').setup({})
- 
-      local bufnr = vim.api.nvim_get_current_buf()
-      local opts = { noremap = true, silent = true, buffer = bufnr, }
-      -- haskell-language-server relies heavily on codeLenses,
-      -- so auto-refresh (see advanced configuration) is enabled by default
-      vim.keymap.set('n', '<space>cl', vim.lsp.codelens.run, opts)
-      -- Hoogle search for the type signature of the definition under the cursor
-      vim.keymap.set('n', '<space>hs', ht.hoogle.hoogle_signature, opts)
-      -- Evaluate all code snippets
-      vim.keymap.set('n', '<space>ea', ht.lsp.buf_eval_all, opts)
-      -- Toggle a GHCi repl for the current package
-      vim.keymap.set('n', '<leader>rr', ht.repl.toggle, opts)
-      -- Toggle a GHCi repl for the current buffer
-      vim.keymap.set('n', '<leader>rf', function()
-        ht.repl.toggle(vim.api.nvim_buf_get_name(0))
-      end, opts)
-      vim.keymap.set('n', '<leader>rq', ht.repl.quit, opts)
- 
+
+      -- Flash.nvim setup
+      require('flash').setup({
+        labels = "asdfghjklqwertyuiopzxcvbnm",
+        search = { mode = "fuzzy" },
+        label = { uppercase = false },
+        modes = {
+          char = { enabled = true },  -- Enhanced f/t/F/T motions
+          search = { enabled = false },  -- Don't integrate with / search
+        },
+      })
+
+      -- Flash keymaps (s to jump, S for treesitter)
+      vim.keymap.set({"n", "x", "o"}, "s", function() require("flash").jump() end, { desc = "Flash jump" })
+      vim.keymap.set({"n", "x", "o"}, "S", function() require("flash").treesitter() end, { desc = "Flash treesitter" })
+      vim.keymap.set("o", "r", function() require("flash").remote() end, { desc = "Remote flash" })
+
       local hl_groups = { 'DiagnosticUnderlineError' }
       for _, hl in ipairs(hl_groups) do
         vim.cmd.highlight(hl .. ' gui=undercurl')
       end
- 
+
       require('textcase').setup {
         prefix = '<leader>t'
       }
       require('telescope').load_extension('textcase')
- 
- 
+
+
       vim.o.foldcolumn = '1' -- '0' is not bad
       vim.o.foldlevel = 99 -- Using ufo provider need a large value, feel free to decrease the value
       vim.o.foldlevelstart = 99
       vim.o.foldenable = true
- 
+
       vim.keymap.set('n', 'zR', require('ufo').openAllFolds)
       vim.keymap.set('n', 'zM', require('ufo').closeAllFolds)
- 
+
       require('ufo').setup({
           provider_selector = function(bufnr, filetype, buftype)
               return {'treesitter', 'indent'}
           end
       })
- 
+
       require("yazi").setup({
         keys = {
           {
@@ -291,22 +387,22 @@ in
       vim.keymap.set("n", "<leader>-", function()
         require("yazi").yazi()
       end)
- 
+
       -- Yanky
       require("yanky").setup()
       vim.keymap.set({"n","x"}, "p", "<Plug>(YankyPutAfter)")
       vim.keymap.set({"n","x"}, "P", "<Plug>(YankyPutBefore)")
       vim.keymap.set({"n","x"}, "gp", "<Plug>(YankyGPutAfter)")
       vim.keymap.set({"n","x"}, "gP", "<Plug>(YankyGPutBefore)")
- 
+
       vim.keymap.set("n", "<c-p>", "<Plug>(YankyPreviousEntry)")
       vim.keymap.set("n", "<c-n>", "<Plug>(YankyNextEntry)")
- 
+
       -- Surround
       require("nvim-surround").setup()
- 
+
       local cmp = require('cmp')
- 
+
       -- nvim-cmp
       cmp.setup {
         sources = {
@@ -315,19 +411,14 @@ in
         },
         mapping = {
           ['<CR>'] = cmp.mapping.confirm({select = false}),
-          ['<S-Tab>'] = cmp.mapping.select_prev_item(select_opts),
-          ['<Tab>'] = cmp.mapping.select_next_item(select_opts),
+          ['<S-Tab>'] = cmp.mapping.select_prev_item({behavior = cmp.SelectBehavior.Select}),
+          ['<Tab>'] = cmp.mapping.select_next_item({behavior = cmp.SelectBehavior.Select}),
           ['<C-Space>'] = cmp.mapping.complete(),
         }
       }
- 
-      -- The nvim-cmp almost supports LSP's capabilities so You should advertise it to LSP servers..
-      local capabilities = require('cmp_nvim_lsp').default_capabilities()
- 
+
       require('kanagawa').setup()
       require("kanagawa").load("wave")
- 
- 
     '';
     extraConfig = ''
       map <Space> <Leader>
@@ -335,25 +426,28 @@ in
       set nu rnu
       set mouse=nicr
       set diffopt+=vertical
- 
-      " colorscheme citruszest
-      " colorscheme onedark
       filetype plugin indent on
- 
+
       command -nargs=+ LspHover lua vim.lsp.buf.hover()
       set keywordprg=:LspHover
+
+      " Window resizing
       noremap <silent> <C-S-Left> :vertical resize -3<CR>
       noremap <silent> <C-S-Right> :vertical resize +3<CR>
- 
+
+      " GHCID
       let g:ghcid_background = 1
- 
-      :tnoremap <A-Left> <m-b>
-      :tnoremap <A-Right> <m-f>
-      :tnoremap <Esc> <C-\><C-n>
- 
+
+      " Terminal mappings
+      tnoremap <A-Left> <m-b>
+      tnoremap <A-Right> <m-f>
+      tnoremap <Esc> <C-\\><C-n>
+
+      " Golden ratio
       let g:golden_ratio_exclude_nonmodifiable = 1
       let g:golden_ratio_autocommand = 0
- 
+
+      autocmd TermOpen * setlocal nonumber norelativenumber
     '';
   };
 }
