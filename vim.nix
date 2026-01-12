@@ -97,6 +97,10 @@ in
       auto-session
       pkgsUnstable.vimPlugins.yazi-nvim
       vim-dasht
+
+      # Claude Code integration
+      pkgsUnstable.vimPlugins.snacks-nvim
+      pkgsUnstable.vimPlugins.claudecode-nvim
     ];
     extraLuaConfig = ''
       if not vim.uv then
@@ -279,7 +283,50 @@ in
         -- Navigate back/forward
         { "<leader>[", "<C-o>", desc = "Jump back" },
         { "<leader>]", "<C-i>", desc = "Jump forward" },
+
+        -- ══════════════════════════════════════════
+        -- AI (Claude Code)
+        -- ══════════════════════════════════════════
+        { "<leader>a", group = "AI (Claude)" },
+        { "<leader>ac", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude terminal" },
+        { "<leader>af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
+        { "<leader>as", "<cmd>ClaudeCodeSend<cr>", mode = "v", desc = "Send selection" },
+        { "<leader>ao", "<cmd>ClaudeCodeOpen<cr>", desc = "Open Claude" },
+        { "<leader>aa", "<cmd>ClaudeCodeAdd %<cr>", desc = "Add current file" },
+
+        -- Diff handling (no vimdiff knowledge needed!)
+        { "<leader>ad", group = "Diff" },
+        { "<leader>ady", "<cmd>ClaudeCodeDiffAccept<cr>", desc = "Yes - accept changes" },
+        { "<leader>adn", "<cmd>ClaudeCodeDiffDeny<cr>", desc = "No - reject changes" },
       })
+
+      -- ══════════════════════════════════════════
+      -- Claude Code setup
+      -- ══════════════════════════════════════════
+      require("snacks").setup({})
+      require("claudecode").setup({
+        auto_start = true,
+        terminal = {
+          split_side = "right",
+          split_width_percentage = 0.4,
+          provider = "snacks",
+        },
+      })
+
+      -- Window navigation (works in both normal + terminal mode)
+      vim.keymap.set({'n', 't'}, '<C-h>', '<C-\\><C-n><C-w>h', { desc = 'Window left' })
+      vim.keymap.set({'n', 't'}, '<C-j>', '<C-\\><C-n><C-w>j', { desc = 'Window down' })
+      vim.keymap.set({'n', 't'}, '<C-k>', '<C-\\><C-n><C-w>k', { desc = 'Window up' })
+      vim.keymap.set({'n', 't'}, '<C-l>', '<C-\\><C-n><C-w>l', { desc = 'Window right' })
+
+      -- Quick toggle between editor and Claude
+      vim.keymap.set({'n', 't'}, '<C-;>', function()
+        if vim.bo.buftype == 'terminal' then
+          vim.cmd('wincmd p')
+        else
+          vim.cmd('ClaudeCodeFocus')
+        end
+      end, { desc = 'Toggle Claude/Editor' })
 
       -- Direct shortcuts for most common LSP actions (no leader needed)
       vim.keymap.set('n', 'K', vim.lsp.buf.hover, { desc = 'Hover docs' })
