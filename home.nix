@@ -1,11 +1,4 @@
 { config, pkgs, lib, ... }:
-let
-  claude-code = (import ../../dotfiles/claude { pkgs = pkgs; nodejs = pkgs.nodejs_24; })."@anthropic-ai/claude-code";
-  pkgsUnstable = import <nixpkgs-unstable> {
-    config.allowUnfree = true;
-    config.allowUnfreePredicate = _: true;
-  };
-in
 {
   imports = [
     ./local.nix
@@ -69,10 +62,11 @@ in
     pkgs.git
     pkgs.httpie
     pkgs.node2nix
-    claude-code
+    pkgs.claude-code
     pkgs.ripgrep
-    pkgsUnstable.gemini-cli
-    pkgsUnstable.codex
+    pkgs.gemini-cli
+    pkgs.codex
+    pkgs.yamllint
   ];
  
   programs.direnv = {

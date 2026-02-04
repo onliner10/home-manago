@@ -1,13 +1,9 @@
 { config, pkgs, lib, ... }:
-
-let
-  pkgsUnstable = import <nixpkgs-unstable> {};
-in
 {
   programs.neovim = {
     enable = true;
     defaultEditor = true;
-    package = pkgsUnstable.neovim-unwrapped;
+    package = pkgs.neovim-unwrapped;
     plugins = with pkgs.vimPlugins; [
       # Core
       plenary-nvim
@@ -28,10 +24,10 @@ in
       telescope-nvim
       telescope-file-browser-nvim
       telescope_hoogle
-      pkgsUnstable.vimPlugins.telescope-live-grep-args-nvim
+      pkgs.vimPlugins.telescope-live-grep-args-nvim
 
       # Navigation
-      pkgsUnstable.vimPlugins.flash-nvim
+      pkgs.vimPlugins.flash-nvim
       nvim-ufo
       vim-bookmarks
       vim-easymotion
@@ -49,7 +45,7 @@ in
 
       # Copilot
       {
-        plugin = pkgsUnstable.vimPlugins.lz-n;
+        plugin = pkgs.vimPlugins.lz-n;
         type = "lua";
         config = ''
           require("lz.n").load {
@@ -66,8 +62,8 @@ in
           }
         '';
       }
-      pkgsUnstable.vimPlugins.copilot-lua
-      pkgsUnstable.vimPlugins.copilot-cmp
+      pkgs.vimPlugins.copilot-lua
+      pkgs.vimPlugins.copilot-cmp
 
       # Editing
       which-key-nvim
@@ -86,7 +82,7 @@ in
 
       # Haskell
       haskell-vim
-      pkgsUnstable.vimPlugins.haskell-tools-nvim
+      pkgs.vimPlugins.haskell-tools-nvim
       ghcid
 
       # Other languages
@@ -95,12 +91,12 @@ in
 
       # Session & misc
       auto-session
-      pkgsUnstable.vimPlugins.yazi-nvim
+      pkgs.vimPlugins.yazi-nvim
       vim-dasht
 
       # Claude Code integration
-      pkgsUnstable.vimPlugins.snacks-nvim
-      pkgsUnstable.vimPlugins.claudecode-nvim
+      pkgs.vimPlugins.snacks-nvim
+      pkgs.vimPlugins.claudecode-nvim
     ];
     extraLuaConfig = ''
       if not vim.uv then
