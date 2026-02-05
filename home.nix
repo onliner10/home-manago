@@ -180,7 +180,7 @@ in
     };
   programs.zsh = {
     enable = true;
-    initExtra = ''
+    initContent = ''
       source ~/.p10k.zsh
       bindkey "^[[1;3C" forward-word
       bindkey "^[[1;3D" backward-word
@@ -210,7 +210,7 @@ in
 
   programs.git = {
     enable = true;
-    aliases = {
+    settings.alias = {
       co = "checkout";
       br = "branch";
       ci = "commit";

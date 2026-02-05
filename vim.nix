@@ -98,7 +98,7 @@
       pkgs.vimPlugins.snacks-nvim
       pkgs.vimPlugins.claudecode-nvim
     ];
-    extraLuaConfig = ''
+    initLua = ''
       if not vim.uv then
         vim.uv = vim.loop
       end
