@@ -12,17 +12,18 @@
 
   outputs = { nixpkgs, home-manager, claude-code-overlay, ... }:
     let
-      system = "aarch64-darwin";
-      pkgs = import nixpkgs {
+      mkPkgs = system: import nixpkgs {
         inherit system;
         config.allowUnfree = true;
         config.allowUnfreePredicate = _: true;
         overlays = [ claude-code-overlay.overlays.default ];
       };
-    in {
-      homeConfigurations."mateusz.urban" = home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
-        modules = [ ./home.nix ];
+      mkHome = system: modules: home-manager.lib.homeManagerConfiguration {
+        pkgs = mkPkgs system;
+        inherit modules;
       };
+    in {
+      homeConfigurations."mateusz.urban" = mkHome "aarch64-darwin" [ ./darwin.nix ];
+      homeConfigurations."mateusz.urban@linux" = mkHome "x86_64-linux" [ ./home.nix ];
     };
 }

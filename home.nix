@@ -1,9 +1,11 @@
 { config, pkgs, lib, ... }:
+let
+  localNixPath = /. + "${builtins.getEnv "HOME"}/.config/home-manager/local.nix";
+in
 {
   imports = [
-    ./local.nix
     ./vim.nix
-  ];
+  ] ++ lib.optional (builtins.pathExists localNixPath) localNixPath;
   nixpkgs = {
     config = {
       allowUnfree = true;
@@ -133,7 +135,7 @@
           style = "Bold";
         };
       };
-      shell.program = "${pkgs.zsh}/bin/zsh";
+      terminal.shell.program = "${pkgs.zsh}/bin/zsh";
       colors = {
         primary = {
           background = "0x1f1f28";

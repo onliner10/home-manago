@@ -7,7 +7,7 @@
 
   # macOS-specific configuration
   home.packages = [
-    # Packages specific to macOS can go here. 
+    # Packages specific to macOS can go here.
     # Generic packages are in home.nix
   ];
 
