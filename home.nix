@@ -135,7 +135,10 @@ in
           style = "Bold";
         };
       };
-      terminal.shell.program = "${pkgs.zsh}/bin/zsh";
+      terminal.shell = {
+        program = "${pkgs.zsh}/bin/zsh";
+        args = [ "-l" ];
+      };
       colors = {
         primary = {
           background = "0x1f1f28";

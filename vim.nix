@@ -332,9 +332,13 @@
 
       local telescope = require('telescope')
 
+      -- Telescope highlight groups for better visibility
+      vim.api.nvim_set_hl(0, "TelescopeMatching", { fg = "#ff9e64", bold = true })
+      vim.api.nvim_set_hl(0, "TelescopeResultsComment", { fg = "#565f89" })
+
       telescope.setup{
         defaults = {
-          path_display={"truncate"} 
+          path_display = { "filename_first" },
         },
         extensions = {
           live_grep_args = {
