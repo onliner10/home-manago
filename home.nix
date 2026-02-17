@@ -1,11 +1,8 @@
 { config, pkgs, lib, ... }:
-let
-  localNixPath = /. + "${builtins.getEnv "HOME"}/.config/home-manager/local.nix";
-in
 {
   imports = [
     ./vim.nix
-  ] ++ lib.optional (builtins.pathExists localNixPath) localNixPath;
+  ];
   nixpkgs = {
     config = {
       allowUnfree = true;
@@ -17,6 +14,7 @@ in
   # manage.
   home.sessionVariables = {
     PATH = "$PATH:/usr/local/bin";
+    RIPGREP_CONFIG_PATH = "$HOME/.ripgreprc";
   };
  
   # This value determines the Home Manager release that your configuration is
@@ -69,6 +67,7 @@ in
     pkgs.gemini-cli
     pkgs.codex
     pkgs.yamllint
+    pkgs.sox
   ];
  
   programs.direnv = {
@@ -183,6 +182,13 @@ in
     };
   programs.zsh = {
     enable = true;
+    envExtra = ''
+      alias tmx='tmux attach || tmux new'
+
+      if [[ -a ~/.nix-profile/lib/ah_aws.sh ]]; then
+        source ~/.nix-profile/lib/ah_aws.sh
+      fi
+    '';
     initContent = ''
       source ~/.p10k.zsh
       bindkey "^[[1;3C" forward-word
