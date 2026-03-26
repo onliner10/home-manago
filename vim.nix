@@ -103,6 +103,10 @@
         vim.uv = vim.loop
       end
 
+      -- Start RPC server so external tools can open files in this Neovim
+      local nvim_sock = '/tmp/nvim-zellij.sock'
+      pcall(vim.fn.delete, nvim_sock)
+      vim.fn.serverstart(nvim_sock)
 
       require'lualine'.setup{
         sections = {},

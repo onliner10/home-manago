@@ -1,4 +1,40 @@
 { config, pkgs, lib, ... }:
+let
+  open-in-nvim = pkgs.writeShellScript "open-in-nvim" ''
+    NVIM_SOCK="/tmp/nvim-zellij.sock"
+    NVIM="${pkgs.neovim-unwrapped}/bin/nvim"
+    ZELLIJ="${pkgs.zellij}/bin/zellij"
+
+    input="$1"
+    [ -S "$NVIM_SOCK" ] || exit 1
+
+    # Parse file:line:col
+    file="$input" line="" col=""
+    if [[ "$input" =~ ^(.+):([0-9]+):([0-9]+)$ ]]; then
+      file="''${BASH_REMATCH[1]}" line="''${BASH_REMATCH[2]}" col="''${BASH_REMATCH[3]}"
+    elif [[ "$input" =~ ^(.+):([0-9]+)$ ]]; then
+      file="''${BASH_REMATCH[1]}" line="''${BASH_REMATCH[2]}"
+    fi
+
+    # Resolve relative paths using Neovim's CWD
+    if [[ "$file" != /* ]]; then
+      nvim_cwd=$("$NVIM" --server "$NVIM_SOCK" --remote-expr "getcwd()" 2>/dev/null || true)
+      if [[ -n "$nvim_cwd" ]]; then file="$nvim_cwd/$file"; fi
+    fi
+
+    # Open file, then position cursor (--remote +cmd not supported in nvim 0.11)
+    "$NVIM" --server "$NVIM_SOCK" --remote "$file"
+    if [[ -n "$line" && -n "$col" ]]; then
+      "$NVIM" --server "$NVIM_SOCK" --remote-send "<Esc>:call cursor($line, $col)<CR>"
+    elif [[ -n "$line" ]]; then
+      "$NVIM" --server "$NVIM_SOCK" --remote-send "<Esc>:''${line}<CR>"
+    fi
+
+    # Best-effort: focus the Neovim pane in Zellij
+    session=$("$ZELLIJ" list-sessions 2>/dev/null | grep -m1 '(current)' | awk '{print $1}')
+    [[ -n "$session" ]] && "$ZELLIJ" --session "$session" action focus-next-pane 2>/dev/null || true
+  '';
+in
 {
   imports = [
     ./vim.nix
@@ -13,7 +49,7 @@
   # Home Manager needs a bit of information about you and the paths it should
   # manage.
   home.sessionVariables = {
-    PATH = "$PATH:/usr/local/bin";
+    PATH = "$PATH:/usr/local/bin:/Applications/Sublime Text.app/Contents/SharedSupport/bin";
     RIPGREP_CONFIG_PATH = "$HOME/.ripgreprc";
   };
  
@@ -61,7 +97,6 @@
     pkgs.nodejs_24
     pkgs.git
     pkgs.httpie
-    pkgs.node2nix
     pkgs.claude-code
     pkgs.ripgrep
     pkgs.gemini-cli
@@ -178,6 +213,17 @@
             }
           ];
         };
+      hints.enabled = [
+        {
+          command = { program = "${open-in-nvim}"; };
+          hyperlinks = false;
+          post_processing = false;
+          persist = false;
+          regex = ''/?(?:[-\\w.@+]+/)+[-\\w.@+]+(?::\\d+){0,2}'';
+          mouse = { enabled = true; mods = "Command|Shift"; };
+          binding = { key = "O"; mods = "Command|Shift"; };
+        }
+      ];
       };
     };
   programs.zsh = {
