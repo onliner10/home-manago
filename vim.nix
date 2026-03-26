@@ -111,7 +111,17 @@
       require'lualine'.setup{
         sections = {},
         tabline = {
-          lualine_a = {'mode'},
+          lualine_a = {
+            'mode',
+            {
+              function() return "REVIEW" end,
+              color = { bg = "#c34043", fg = "#1f1f28", gui = "bold" },
+              cond = function()
+                local ok, lib = pcall(require, "diffview.lib")
+                return ok and lib.get_current_view() ~= nil
+              end,
+            },
+          },
           lualine_b = {'branch', 'diff', 'diagnostics'},
           lualine_c = {'lsp_progress', {'filename', path = 1, shorting_target=40}},
           lualine_x = {'encoding', 'fileformat', 'filetype'},
@@ -130,6 +140,109 @@
         delay = 200,  -- Show popup quickly for discoverability
         icons = { mappings = false },
       }
+
+      -- ══════════════════════════════════════════
+      -- Code review: base branch detection + toggle
+      -- ══════════════════════════════════════════
+      local function get_base_branch()
+        local ref = vim.fn.system("git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null")
+        if vim.v.shell_error == 0 then
+          local branch = vim.trim(ref):match("refs/remotes/origin/(.*)")
+          if branch then return "origin/" .. branch end
+        end
+        for _, name in ipairs({"main", "master", "develop"}) do
+          vim.fn.system("git rev-parse --verify origin/" .. name .. " 2>/dev/null")
+          if vim.v.shell_error == 0 then return "origin/" .. name end
+        end
+        return "origin/main"
+      end
+
+      local function diffview_smart_toggle()
+        local lib = require("diffview.lib")
+
+        if #lib.views == 0 then
+          local base = get_base_branch()
+          vim.cmd("DiffviewOpen " .. base .. "...HEAD")
+          vim.notify("REVIEW vs " .. base .. ": ]c/[c=hunks  gf=file  <leader>gm=back  <leader>gq=end")
+          return
+        end
+
+        if lib.get_current_view() then
+          local prev = lib.get_prev_non_view_tabpage()
+          if prev then
+            vim.api.nvim_set_current_tabpage(prev)
+            vim.notify("EXPLORING: <leader>gm=diff  <leader>gq=end review")
+          end
+        else
+          local view = lib.views[1]
+          if view and vim.api.nvim_tabpage_is_valid(view.tabpage) then
+            vim.api.nvim_set_current_tabpage(view.tabpage)
+            vim.notify("REVIEW: ]c/[c=hunks  gf=file  <leader>gm=back  <leader>gq=end")
+          end
+        end
+      end
+
+      -- ══════════════════════════════════════════
+      -- Floating cheat sheet (organized by workflow)
+      -- ══════════════════════════════════════════
+      local function show_cheat_sheet()
+        local lines = {
+          " REVIEW CODE",
+          "   <leader>gm   Toggle diff vs base branch",
+          "   <leader>gq   End review",
+          "   ]c / [c      Next / prev hunk",
+          "   gf           Go to file (from diff)",
+          "   <leader>gb   Blame  <leader>gs  Status",
+          "",
+          " FIND THINGS",
+          "   <leader>ff   Files     <leader>fg  Grep",
+          "   <leader>fw   Word      <leader>fc  Symbols",
+          "   <leader>fo   Recent    <leader>fb  Buffers",
+          "",
+          " NAVIGATE",
+          "   s / S        Flash jump / treesitter",
+          "   gd  definition   gr  references   K  hover",
+          "   <leader>[  back  <leader>]  forward",
+          "",
+          " EDIT & FILES",
+          "   <leader>w  save   <leader>q  quit",
+          "   <leader>-  Yazi   <leader>t  text case",
+          "",
+          " AI (CLAUDE)",
+          "   <leader>ac  toggle   <leader>as  send (v)",
+          "",
+          "                        [q] or [Esc] to close",
+        }
+
+        local buf = vim.api.nvim_create_buf(false, true)
+        vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+        vim.bo[buf].modifiable = false
+        vim.bo[buf].bufhidden = "wipe"
+
+        local width = 55
+        local height = #lines
+        local ui = vim.api.nvim_list_uis()[1]
+
+        local win = vim.api.nvim_open_win(buf, true, {
+          relative = "editor",
+          width = width,
+          height = height,
+          row = math.floor((ui.height - height) / 2),
+          col = math.floor((ui.width - width) / 2),
+          style = "minimal",
+          border = "rounded",
+          title = " Cheat Sheet ",
+          title_pos = "center",
+        })
+
+        local close = function()
+          if vim.api.nvim_win_is_valid(win) then
+            vim.api.nvim_win_close(win, true)
+          end
+        end
+        vim.keymap.set("n", "q", close, { buffer = buf, nowait = true })
+        vim.keymap.set("n", "<Esc>", close, { buffer = buf, nowait = true })
+      end
 
       wk.add({
         -- ══════════════════════════════════════════
@@ -191,8 +304,18 @@
         -- ══════════════════════════════════════════
         { "<leader>g", group = "Git" },
         { "<leader>go", "<cmd>DiffviewOpen<CR>", desc = "Open diff" },
-        { "<leader>gq", "<cmd>DiffviewClose<CR>", desc = "Quit diff" },
-        { "<leader>gm", "<cmd>DiffviewOpen master<CR>", desc = "Diff vs master" },
+        { "<leader>gq", function()
+            local lib = require("diffview.lib")
+            if #lib.views > 0 then
+              local view = lib.views[1]
+              if view and vim.api.nvim_tabpage_is_valid(view.tabpage) then
+                vim.api.nvim_set_current_tabpage(view.tabpage)
+              end
+              vim.cmd("DiffviewClose")
+              vim.notify("Review ended.")
+            end
+          end, desc = "End review" },
+        { "<leader>gm", diffview_smart_toggle, desc = "Toggle diff vs base" },
         { "<leader>gh", "<cmd>DiffviewFileHistory --follow %<cr>", desc = "File history" },
         { "<leader>gl", "<Cmd>.DiffviewFileHistory --follow<CR>", desc = "Line history" },
         { "<leader>gr", "<cmd>DiffviewFileHistory<cr>", desc = "Repo history" },
@@ -276,6 +399,7 @@
         -- ══════════════════════════════════════════
         -- Quick actions (no submenu)
         -- ══════════════════════════════════════════
+        { "<leader>?", show_cheat_sheet, desc = "Cheat sheet" },
         { "<leader>w", "<cmd>w<CR>", desc = "Save" },
         { "<leader>q", "<cmd>q<CR>", desc = "Quit" },
         { "<leader>-", "<cmd>Yazi<cr>", desc = "Yazi" },
