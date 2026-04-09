@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, unstable, ... }:
 let
   open-in-nvim = pkgs.writeShellScript "open-in-nvim" ''
     NVIM_SOCK="/tmp/nvim-zellij.sock"
@@ -103,6 +103,7 @@ in
     pkgs.codex
     pkgs.yamllint
     pkgs.sox
+    unstable.opencode
   ];
  
   programs.direnv = {

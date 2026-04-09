@@ -3,15 +3,21 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { nixpkgs, home-manager, ... }:
+  outputs = { nixpkgs, nixpkgs-unstable, home-manager, ... }:
     let
       mkPkgs = system: import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+        config.allowUnfreePredicate = _: true;
+      };
+      mkUnstable = system: import nixpkgs-unstable {
         inherit system;
         config.allowUnfree = true;
         config.allowUnfreePredicate = _: true;
@@ -22,6 +28,9 @@
           localModules = if builtins.pathExists localNixPath then [ localNixPath ] else [];
         in home-manager.lib.homeManagerConfiguration {
           pkgs = mkPkgs system;
+          extraSpecialArgs = {
+            unstable = mkUnstable system;
+          };
           modules = modules ++ localModules ++ [{
             home.username = username;
             home.homeDirectory = homeDirectory;
