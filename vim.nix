@@ -77,6 +77,10 @@
 
       # Treesitter
       nvim-treesitter
+      nvim-treesitter-context
+      nvim-treesitter-parsers.haskell
+      nvim-treesitter-parsers.nix
+      nvim-treesitter-parsers.lua
       nvim-treesitter-parsers.luadoc
       nvim-treesitter-parsers.vimdoc
 
@@ -130,6 +134,15 @@
         },
       }
   
+      -- Start treesitter (needed for treesitter-context) then re-enable traditional syntax
+      vim.api.nvim_create_autocmd("FileType", {
+        callback = function(args)
+          if pcall(vim.treesitter.start, args.buf) then
+            vim.bo[args.buf].syntax = 'ON'
+          end
+        end,
+      })
+
       require('guess-indent').setup {}
       require("todo-comments").setup()
 
@@ -298,6 +311,7 @@
         { "<leader>lf", vim.lsp.buf.format, desc = "Format" },
         { "<leader>ll", vim.diagnostic.open_float, desc = "Line diagnostic" },
         { "<leader>lc", vim.lsp.codelens.run, desc = "Codelens" },
+        { "<leader>lC", function() require('treesitter-context').toggle() end, desc = "Context (toggle)" },
 
         -- ══════════════════════════════════════════
         -- Git
@@ -535,6 +549,11 @@
           provider_selector = function(bufnr, filetype, buftype)
               return {'treesitter', 'indent'}
           end
+      })
+
+      require('treesitter-context').setup({
+        max_lines = 5,
+        multiline_threshold = 1,
       })
 
       require("yazi").setup({
