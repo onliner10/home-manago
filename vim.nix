@@ -1,5 +1,7 @@
 { config, pkgs, lib, ... }:
 {
+  xdg.configFile."nvim/lua/haskell_def.lua".source = ./nvim/lua/haskell_def.lua;
+
   programs.neovim = {
     enable = true;
     defaultEditor = true;
@@ -154,6 +156,30 @@
         icons = { mappings = false },
       }
 
+      local lookup_haskell_symbol = function()
+        require("haskell_def").lookup_symbol()
+      end
+
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = { "haskell", "lhaskell" },
+        callback = function(args)
+          local goto_haskell_def = function()
+            require("haskell_def").goto()
+          end
+          vim.keymap.set("n", "<C-]>", goto_haskell_def, { buffer = args.buf, desc = "Definition (HLS/tags/TS/rg)" })
+          vim.keymap.set("n", "<leader>gd", goto_haskell_def, { buffer = args.buf, desc = "Definition (HLS/tags/TS/rg)" })
+          vim.api.nvim_buf_create_user_command(args.buf, "HaskellDefLookup", function()
+            require("haskell_def").lookup_symbol()
+          end, {})
+          vim.api.nvim_buf_create_user_command(args.buf, "HaskellDefDebug", function()
+            require("haskell_def").debug()
+          end, {})
+          vim.api.nvim_buf_create_user_command(args.buf, "HaskellDefClearCache", function()
+            require("haskell_def").clear_cache()
+          end, {})
+        end,
+      })
+
       -- ══════════════════════════════════════════
       -- Code review: base branch detection + toggle
       -- ══════════════════════════════════════════
@@ -209,7 +235,7 @@
           "",
           " FIND THINGS",
           "   <leader>ff   Files     <leader>fg  Grep",
-          "   <leader>fw   Word      <leader>fc  Symbols",
+          "   <leader>fw   Word      <leader>fc  Symbols   <leader>fs  Haskell sym",
           "   <leader>fo   Recent    <leader>fb  Buffers",
           "",
           " NAVIGATE",
@@ -272,6 +298,7 @@
         { "<leader>ft", ":TodoTelescope keywords=FIX<CR>", desc = "TODOs" },
         { "<leader>fy", function() require("telescope").extensions.yank_history.yank_history({}) end, desc = "Yank history" },
         { "<leader>fc", "<cmd>Telescope lsp_dynamic_workspace_symbols<cr>", desc = "Code symbols" },
+        { "<leader>fs", lookup_haskell_symbol, desc = "Haskell symbol (HLS/tags/TS/rg)" },
         { "<leader>fn", function() require('telescope.builtin').find_files({find_command={'fd', vim.fn.expand("<cword>")}}) end, desc = "Word as filename" },
 
         -- Fallback searches (when LSP is stuck)
@@ -465,6 +492,11 @@
           vim.cmd('ClaudeCodeFocus')
         end
       end, { desc = 'Toggle Claude/Editor' })
+
+      -- Reserve <leader>fs globally for Haskell fallback symbol lookup.
+      -- Keep this after which-key registrations so prefix/group maps cannot swallow it.
+      pcall(vim.keymap.del, 'n', '<leader>fs')
+      vim.keymap.set('n', '<leader>fs', lookup_haskell_symbol, { desc = 'Haskell symbol (HLS/tags/TS/rg)' })
 
       -- Direct shortcuts for most common LSP actions (no leader needed)
       vim.keymap.set('n', 'K', vim.lsp.buf.hover, { desc = 'Hover docs' })
