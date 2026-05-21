@@ -34,25 +34,45 @@ let
     session=$("$ZELLIJ" list-sessions 2>/dev/null | grep -m1 '(current)' | awk '{print $1}')
     [[ -n "$session" ]] && "$ZELLIJ" --session "$session" action focus-next-pane 2>/dev/null || true
   '';
-in
-{
-  imports = [
-    ./vim.nix
-  ];
+in {
+  imports = [ ./vim.nix ] ++ lib.optional (builtins.pathExists ./local.nix) ./local.nix;
   nixpkgs = {
     config = {
       allowUnfree = true;
       allowUnfreePredicate = (_: true);
     };
   };
- 
+
   # Home Manager needs a bit of information about you and the paths it should
   # manage.
   home.sessionVariables = {
-    PATH = "$PATH:/usr/local/bin:/Applications/Sublime Text.app/Contents/SharedSupport/bin";
+    NPM_CONFIG_CACHE = "$HOME/.local/share/npm-cache";
+    NPM_CONFIG_PREFIX = "$HOME/.local";
+    PATH =
+      "$PATH:/usr/local/bin:/Applications/Sublime Text.app/Contents/SharedSupport/bin:/home/mateusz.urban/.bun/bin";
     RIPGREP_CONFIG_PATH = "$HOME/.ripgreprc";
   };
- 
+
+  home.sessionPath = [
+    "$HOME/.local/bin"
+  ];
+
+  home.file.".npmrc".text = ''
+    cache=${config.home.homeDirectory}/.local/share/npm-cache
+    prefix=${config.home.homeDirectory}/.local
+  '';
+
+  home.activation.installLatestCodex = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    npm_prefix="${config.home.homeDirectory}/.local"
+    npm_cache="${config.home.homeDirectory}/.local/share/npm-cache"
+
+    ''${DRY_RUN_CMD:-} mkdir -p "$npm_prefix" "$npm_cache"
+    ''${DRY_RUN_CMD:-} env \
+      NPM_CONFIG_PREFIX="$npm_prefix" \
+      NPM_CONFIG_CACHE="$npm_cache" \
+      ${pkgs.nodejs_24}/bin/npm install -g @openai/codex@latest
+  '';
+
   # This value determines the Home Manager release that your configuration is
   # compatible with. This helps avoid breakage when a new Home Manager release
   # introduces backwards incompatible changes.
@@ -61,7 +81,7 @@ in
   # want to update the value, then make sure to first check the Home Manager
   # release notes.
   home.stateVersion = "25.05"; # Please read the comment before changing.
-  
+
   # The home.packages option allows you to install Nix packages into your
   # environment.
   home.packages = [
@@ -89,31 +109,29 @@ in
     pkgs.multitail
     pkgs.openapi-tui
     pkgs.yazi
-    pkgs.drawio 
+    pkgs.drawio
     pkgs.dasht
     pkgs.git-lfs
     pkgs.gnupg
     pkgs.zellij
     pkgs.nodejs_24
+    pkgs.uv
+    pkgs.python313
     pkgs.git
     pkgs.httpie
-    pkgs.claude-code
     pkgs.ripgrep
+    (pkgs.haskell.lib.justStaticExecutables pkgs.haskellPackages.fast-tags)
     pkgs.gemini-cli
-    pkgs.codex
     pkgs.yamllint
     pkgs.sox
-    unstable.opencode
   ];
- 
+
   programs.direnv = {
     enable = true;
     enableZshIntegration = true; # see note on other shells below
     nix-direnv.enable = true;
   };
-  programs.home-manager = {
-    enable = true;
-  };
+  programs.home-manager = { enable = true; };
   programs.tmux = {
     enable = true;
     shell = "${pkgs.zsh}/bin/zsh";
@@ -204,29 +222,33 @@ in
           foreground = "0xc8c093";
         };
         indexed_colors = [
-            {
-              index = 16;
-              color = "0xffa066";
-            }
-            {
-              index = 17;
-              color = "0xff5d62";
-            }
-          ];
-        };
-      hints.enabled = [
-        {
-          command = { program = "${open-in-nvim}"; };
-          hyperlinks = false;
-          post_processing = false;
-          persist = false;
-          regex = ''/?(?:[-\\w.@+]+/)+[-\\w.@+]+(?::\\d+){0,2}'';
-          mouse = { enabled = true; mods = "Command|Shift"; };
-          binding = { key = "O"; mods = "Command|Shift"; };
-        }
-      ];
+          {
+            index = 16;
+            color = "0xffa066";
+          }
+          {
+            index = 17;
+            color = "0xff5d62";
+          }
+        ];
       };
+      hints.enabled = [{
+        command = { program = "${open-in-nvim}"; };
+        hyperlinks = false;
+        post_processing = false;
+        persist = false;
+        regex = "/?(?:[-\\\\w.@+]+/)+[-\\\\w.@+]+(?::\\\\d+){0,2}";
+        mouse = {
+          enabled = true;
+          mods = "Command|Shift";
+        };
+        binding = {
+          key = "O";
+          mods = "Command|Shift";
+        };
+      }];
     };
+  };
   programs.zsh = {
     enable = true;
     envExtra = ''
@@ -236,11 +258,25 @@ in
         source ~/.nix-profile/lib/ah_aws.sh
       fi
     '';
-    initContent = ''
-      source ~/.p10k.zsh
-      bindkey "^[[1;3C" forward-word
-      bindkey "^[[1;3D" backward-word
-    '';
+    initContent = lib.mkMerge [
+      ''
+        export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
+        source ~/.p10k.zsh
+        bindkey "^[[1;3C" forward-word
+        bindkey "^[[1;3D" backward-word
+      ''
+      (lib.mkAfter ''
+        autoload -U add-zsh-hook
+
+        __prefer_user_bins() {
+          path=("$HOME/.local/bin" "$HOME/.opencode/bin" $path)
+        }
+
+        __prefer_user_bins
+        add-zsh-hook chpwd __prefer_user_bins
+        add-zsh-hook precmd __prefer_user_bins
+      '')
+    ];
     plugins = [
       {
         # will source zsh-autosuggestions.plugin.zsh

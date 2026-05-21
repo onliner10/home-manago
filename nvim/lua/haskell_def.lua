@@ -101,6 +101,10 @@ local function choice_key(info)
 end
 
 local function remembered_candidate(key, candidates)
+  if not key then
+    return nil
+  end
+
   local saved = load_choices()[key]
   if not saved then
     return nil
@@ -118,6 +122,10 @@ local function remembered_candidate(key, candidates)
 end
 
 local function remember_candidate(key, candidate)
+  if not key then
+    return
+  end
+
   load_choices()[key] = candidate_id(candidate)
   save_choices()
 end
@@ -299,6 +307,46 @@ local function lsp_workspace_symbol_candidates(info)
     local result = response.result or {}
     for _, item in ipairs(result) do
       local candidate = lsp_location_to_candidate(item, info)
+      if candidate then
+        table.insert(candidates, candidate)
+      end
+    end
+  end
+  return candidates
+end
+
+local function lsp_reference_candidate(location, info)
+  local uri = location.uri or location.targetUri
+  if not uri then
+    return nil
+  end
+
+  local range = location.range or location.targetSelectionRange or location.targetRange or {}
+  local start = range.start or {}
+  return {
+    path = vim.uri_to_fname(uri),
+    row = start.line or 0,
+    col = start.character or 0,
+    kind = "reference",
+    score = 120,
+    source = "hls",
+    text = info.symbol,
+  }
+end
+
+local function lsp_reference_candidates(info)
+  local ok_params, params = pcall(vim.lsp.util.make_position_params, 0, "utf-8")
+  if not ok_params then
+    params = vim.lsp.util.make_position_params()
+  end
+  params.context = { includeDeclaration = false }
+
+  local responses = vim.lsp.buf_request_sync(0, "textDocument/references", params, LSP_TIMEOUT_MS)
+  local candidates = {}
+  for _, response in pairs(responses or {}) do
+    local locations = flatten_lsp_locations(response.result)
+    for _, location in ipairs(locations) do
+      local candidate = lsp_reference_candidate(location, info)
       if candidate then
         table.insert(candidates, candidate)
       end
@@ -687,6 +735,58 @@ local function ripgrep_candidates(info)
   return candidates
 end
 
+local function reference_ripgrep_pattern(info)
+  local symbol = rg_escape(info.symbol)
+  local full = info.full and info.full ~= info.symbol and rg_escape(info.full) or nil
+  local body = full and (full .. "|" .. symbol) or symbol
+  return "(^|[^[:alnum:]_'])(" .. body .. ")($|[^[:alnum:]_'])"
+end
+
+local function ripgrep_reference_candidates(info)
+  if vim.fn.executable("rg") == 0 then
+    return {}
+  end
+
+  local root = project_root(vim.api.nvim_buf_get_name(0))
+  local args = {
+    "rg",
+    "--vimgrep",
+    "--no-heading",
+    "--color", "never",
+    "--glob", "*.hs",
+    "--glob", "*.lhs",
+    "--glob", "*.hs-boot",
+    "--glob", "!dist-newstyle/**",
+    "--glob", "!.stack-work/**",
+    "--glob", "!.direnv/**",
+    "--glob", "!vendor/**",
+    reference_ripgrep_pattern(info),
+    root,
+  }
+  local lines = vim.fn.systemlist(args)
+  if vim.v.shell_error > 1 then
+    return {}
+  end
+
+  local candidates = {}
+  for _, line in ipairs(lines) do
+    local path, lnum, _col, text = line:match("^(.+):(%d+):(%d+):(.*)$")
+    if path and valid_haskell_path(path) then
+      local start_col = (text:find(info.full, 1, true) or text:find(info.symbol, 1, true) or 1) - 1
+      table.insert(candidates, {
+        path = path,
+        row = tonumber(lnum) - 1,
+        col = start_col,
+        kind = "reference",
+        score = 70,
+        source = "ripgrep",
+        text = text,
+      })
+    end
+  end
+  return candidates
+end
+
 local function candidate_sort(a, b)
   if a.score ~= b.score then
     return a.score > b.score
@@ -799,7 +899,9 @@ local function context_line(candidate)
 end
 
 local function kind_label(candidate)
-  if candidate.source == "ctags" then
+  if candidate.kind == "reference" then
+    return "REF"
+  elseif candidate.source == "ctags" then
     return "TAG"
   elseif candidate.kind == "type" then
     return "TYPE"
@@ -849,10 +951,10 @@ local function preview_lines(candidate, root)
   return out, lnum - from + 3
 end
 
-local function candidate_previewer(previewers, root)
+local function candidate_previewer(previewers, root, title)
   local ns = vim.api.nvim_create_namespace("haskell_def_preview")
   return previewers.new_buffer_previewer({
-    title = "Definition preview",
+    title = title or "Definition preview",
     define_preview = function(self, entry)
       local candidate = entry.value
       local bufnr = self.state.bufnr
@@ -896,7 +998,7 @@ local function pick_with_telescope(candidates, title, key)
       end,
     }),
     sorter = conf.generic_sorter({}),
-    previewer = candidate_previewer(previewers, root),
+    previewer = candidate_previewer(previewers, root, title .. " preview"),
     layout_strategy = "horizontal",
     layout_config = {
       width = 0.98,
@@ -975,6 +1077,29 @@ local function resolve_candidates(candidates, title, key)
   return pick_with_ui_select(candidates, title, key)
 end
 
+local function resolve_references(candidates, title)
+  candidates = dedupe_candidates(candidates)
+  if #candidates == 0 then
+    return false
+  end
+
+  set_quickfix(candidates, title)
+
+  if #candidates == 1 then
+    if jump_candidate(candidates[1]) then
+      notify(title .. ": 1 reference")
+      return true
+    end
+    notify("Jump failed: " .. title, vim.log.levels.ERROR)
+    return true
+  end
+
+  if pick_with_telescope(candidates, title, nil) then
+    return true
+  end
+  return pick_with_ui_select(candidates, title, nil)
+end
+
 local function list_extend(target, source)
   for _, item in ipairs(source or {}) do
     table.insert(target, item)
@@ -1000,6 +1125,30 @@ local function lookup_info(info)
 
   notify("No definition found for " .. info.symbol, vim.log.levels.WARN)
   return true
+end
+
+function M.references()
+  if not is_haskell_buf(0) then
+    vim.lsp.buf.references()
+    return
+  end
+
+  local info = current_symbol()
+  if not info.symbol or info.symbol == "" then
+    notify("No Haskell symbol under cursor", vim.log.levels.WARN)
+    return
+  end
+
+  local candidates = lsp_reference_candidates(info)
+  if #candidates > 0 and resolve_references(candidates, "references " .. info.symbol) then
+    return
+  end
+
+  if resolve_references(ripgrep_reference_candidates(info), "ripgrep refs " .. info.symbol) then
+    return
+  end
+
+  notify("No references found for " .. info.symbol, vim.log.levels.WARN)
 end
 
 function M.lookup_symbol()

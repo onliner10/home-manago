@@ -160,6 +160,10 @@
         require("haskell_def").lookup_symbol()
       end
 
+      local find_haskell_refs = function()
+        require("haskell_def").references()
+      end
+
       vim.api.nvim_create_autocmd("FileType", {
         pattern = { "haskell", "lhaskell" },
         callback = function(args)
@@ -167,7 +171,12 @@
             require("haskell_def").goto()
           end
           vim.keymap.set("n", "<C-]>", goto_haskell_def, { buffer = args.buf, desc = "Definition (HLS/tags/TS/rg)" })
+          vim.keymap.set("n", "<C-[>", find_haskell_refs, { buffer = args.buf, desc = "References (HLS/rg)" })
+          vim.keymap.set("n", "gr", find_haskell_refs, { buffer = args.buf, desc = "References (HLS/rg)" })
           vim.keymap.set("n", "<leader>gd", goto_haskell_def, { buffer = args.buf, desc = "Definition (HLS/tags/TS/rg)" })
+          vim.api.nvim_buf_create_user_command(args.buf, "HaskellReferences", function()
+            require("haskell_def").references()
+          end, {})
           vim.api.nvim_buf_create_user_command(args.buf, "HaskellDefLookup", function()
             require("haskell_def").lookup_symbol()
           end, {})
@@ -240,7 +249,7 @@
           "",
           " NAVIGATE",
           "   s / S        Flash jump / treesitter",
-          "   gd  definition   gr  references   K  hover",
+          "   C-] definition   C-[ refs   gd/gr LSP   K hover",
           "   <leader>[  back  <leader>]  forward",
           "",
           " EDIT & FILES",
